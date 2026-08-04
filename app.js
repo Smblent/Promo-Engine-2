@@ -10,9 +10,62 @@ const DEFAULT_LINKS = [
     { id: 'bandcamp', label: 'Bandcamp', url: '', icon: '💾' }
 ];
 
+// --- Campaign Templates (Proven Methods) ---
+const CAMPAIGN_TEMPLATES = {
+    release: {
+        name: 'New Release Drop',
+        desc: '7-day buildup + drop strategy',
+        days: (d) => [
+            { day: 1, platform: 'Instagram', type: 'Story Teaser', time: '6:00 PM', copy: `👀 Something new is coming…\n\n${d.song} drops ${d.date}.`, hashtags: '#NewMusic #Teaser #ComingSoon', cta: 'Turn on post notifications 🔊' },
+            { day: 2, platform: 'TikTok / Reels', type: 'Behind the Beat', time: '12:00 PM', copy: `The making of ${d.song} 🎧\n\nThis one hit different in the studio.`, hashtags: '#BehindTheScenes #Studio #MusicProduction', cta: 'Follow for the full drop' },
+            { day: 3, platform: 'Instagram / X', type: 'Pre-Save Push', time: '5:00 PM', copy: `🚨 Pre-save ${d.song} now.\n\nLink in bio. Every pre-save helps the algorithm push this to new fans.`, hashtags: '#PreSave #NewMusicFriday #IndieArtist', cta: 'Tag 2 friends who need this track' },
+            { day: 4, platform: 'Instagram Story', type: 'Countdown', time: '8:00 PM', copy: `⏰ 2 days until ${d.song} is live everywhere.\n\nWho’s ready?`, hashtags: '#Countdown #NewMusic', cta: 'Reply with a 🔥 if you’re waiting' },
+            { day: 5, platform: 'TikTok / Reels', type: 'Snippet / Hook', time: '11:00 AM', copy: `This hook has been stuck in my head for weeks…\n\n${d.song} drops ${d.date}.`, hashtags: '#Snippet #Viral #NewMusic', cta: 'Duet this if it hits' },
+            { day: 6, platform: 'ALL PLATFORMS', type: 'RELEASE DAY', time: '9:00 AM', copy: `🚀 ${d.song} IS OUT NOW EVERYWHERE.\n\nRun it up. Stream, save, share. Let’s move.`, hashtags: '#OutNow #NewMusic #StreamNow', cta: 'Screenshot your stream & tag me' },
+            { day: 7, platform: 'Instagram / X', type: 'Thank You / UGC', time: '7:00 PM', copy: `Y’all showed MAD love on ${d.song} today.\n\nKeep tagging me in your stories — I’m reposting all night.`, hashtags: '#FanLove #Repost #IndieMusic', cta: 'Drop your favorite lyric below' }
+        ]
+    },
+    playlist: {
+        name: 'Playlist Push',
+        desc: '5-day curator & fan push',
+        days: (d) => [
+            { day: 1, platform: 'Spotify / Email', type: 'Curator Pitch', time: '10:00 AM', copy: `Just submitted ${d.song} to 10 playlist curators.\n\nPitch tip: lead with the vibe, not your bio.`, hashtags: '#PlaylistPush #Spotify', cta: 'Submit to Spotify for Artists editorials' },
+            { day: 2, platform: 'Instagram Story', type: 'Playlist Request', time: '6:00 PM', copy: `What playlist should ${d.song} be on?\n\nTag the curator or drop the playlist link.`, hashtags: '#Playlist #Curator', cta: 'DM me playlists you run' },
+            { day: 3, platform: 'TikTok / Reels', type: 'Playlist Vibe Check', time: '12:00 PM', copy: `POV: ${d.song} just got added to your late-night drive playlist 🌙`, hashtags: '#PlaylistVibes #LateNightDrive', cta: 'Stitch this with your reaction' },
+            { day: 4, platform: 'Instagram / X', type: 'Fan Push', time: '5:00 PM', copy: `If ${d.song} is in your playlist, screenshot it and tag me.\n\nBest playlist name wins a repost.`, hashtags: '#PlaylistChallenge', cta: 'Add to your playlist & share' },
+            { day: 5, platform: 'All Platforms', type: 'Results / Thanks', time: '7:00 PM', copy: `${d.song} just hit [X] playlist adds in 5 days.\n\nIndependent artists run the game. Thank you.`, hashtags: '#IndependentArtist #Playlist', cta: 'Keep sharing — it compounds' }
+        ]
+    },
+    viral: {
+        name: 'Viral Hook Challenge',
+        desc: '5-day short-form blitz',
+        days: (d) => [
+            { day: 1, platform: 'TikTok / Reels', type: 'Hook Challenge', time: '12:00 PM', copy: `I dare you to not move when this hook drops 😤\n\n${d.song}`, hashtags: '#HookChallenge #Viral', cta: 'Use this sound & show your reaction' },
+            { day: 2, platform: 'TikTok / Reels', type: 'Duet Prompt', time: '11:00 AM', copy: `Drop a verse on this beat.\n\nBest one gets pinned.`, hashtags: '#OpenVerse #Duet', cta: 'Duet this — no rules' },
+            { day: 3, platform: 'TikTok / Reels', type: 'Trending Sound Flip', time: '1:00 PM', copy: `When the trending sound meets ${d.song}…`, hashtags: '#Trending #Remix', cta: 'Stitch this flip' },
+            { day: 4, platform: 'Instagram Story', type: 'Poll / Engage', time: '6:00 PM', copy: `Which hits harder: the beat or the lyrics?`, hashtags: '#Poll #Engage', cta: 'Vote & share to your story' },
+            { day: 5, platform: 'TikTok / Reels', type: 'UGC Repost', time: '12:00 PM', copy: `Y’all went CRAZY on this sound.\n\nHere are my favorites from this week.`, hashtags: '#UGC #Repost #Community', cta: 'Keep posting — I’m watching' }
+        ]
+    },
+    countdown: {
+        name: 'Pre-Save Countdown',
+        desc: '7-day hype build to release',
+        days: (d) => [
+            { day: 1, platform: 'Instagram / X', type: 'Announcement', time: '5:00 PM', copy: `🗓 MARK YOUR CALENDARS\n\n${d.song} — ${d.date}`, hashtags: '#SaveTheDate', cta: 'Turn on notifications' },
+            { day: 2, platform: 'Instagram Story', type: 'Mood Board', time: '8:00 PM', copy: `The vibe of ${d.song} in 3 colors:`, hashtags: '#MoodBoard #Aesthetic', cta: 'Screenshot your guess' },
+            { day: 3, platform: 'TikTok / Reels', type: 'Lyric Teaser', time: '12:00 PM', copy: `“[Pull a lyric from the song]”\n\n${d.song} — ${d.date}`, hashtags: '#Lyrics #Quote', cta: 'Guess the next line in comments' },
+            { day: 4, platform: 'Instagram / X', type: 'Pre-Save Reminder', time: '6:00 PM', copy: `3 days left.\n\nPre-save link in bio — it takes 5 seconds and helps more than you know.`, hashtags: '#PreSave', cta: 'Link in bio' },
+            { day: 5, platform: 'TikTok / Reels', type: 'Reaction Test', time: '11:00 AM', copy: `Played ${d.song} for my [friend/mom/dog] for the first time…`, hashtags: '#Reaction #FirstListen', cta: 'Drop your predictions' },
+            { day: 6, platform: 'All Platforms', type: 'Final Teaser', time: '9:00 PM', copy: `Tomorrow. Midnight. ${d.song}.\n\nSet your alarm.`, hashtags: '#MidnightRelease', cta: 'Who’s staying up?' },
+            { day: 7, platform: 'All Platforms', type: 'LIVE / DROP', time: '12:01 AM', copy: `${d.song} IS LIVE.\n\nGo run it up NOW.`, hashtags: '#OutNow #NewMusic', cta: 'Stream link in bio' }
+        ]
+    }
+};
+
 // --- State ---
 let currentProfile = null;
 let currentId = '';
+let currentCampaignId = null;
 
 // --- Helpers ---
 function getDefaultProfile(name) {
@@ -22,7 +75,8 @@ function getDefaultProfile(name) {
         badgeText: 'NEW MUSIC OUT NOW',
         badgeEmoji: '🔴',
         avatarEmoji: '🎵',
-        links: JSON.parse(JSON.stringify(DEFAULT_LINKS))
+        links: JSON.parse(JSON.stringify(DEFAULT_LINKS)),
+        campaigns: []
     };
 }
 
@@ -60,6 +114,10 @@ function normalizeUrl(url) {
     if (url.match(/^https?:\/\//i)) return url;
     if (url.startsWith('mailto:')) return url;
     return 'https://' + url;
+}
+
+function uuid() {
+    return 'c_' + Math.random().toString(36).substr(2, 9);
 }
 
 // --- Auth ---
@@ -108,6 +166,7 @@ function logout() {
     setCurrentAccountId('');
     currentProfile = null;
     currentId = '';
+    currentCampaignId = null;
     showView('loginView');
     renderAccountList();
 }
@@ -121,12 +180,14 @@ function deleteAccount() {
     logout();
 }
 
-// --- App ---
+// --- Bio App ---
 function loadAccount(id) {
     const accounts = getAccounts();
     if (!accounts[id]) { logout(); return; }
     currentId = id;
     currentProfile = JSON.parse(JSON.stringify(accounts[id].data));
+    // Ensure campaigns array exists for legacy profiles
+    if (!currentProfile.campaigns) currentProfile.campaigns = [];
     renderBio();
     showView('appView');
 }
@@ -156,14 +217,12 @@ function renderBio() {
 
     p.links.forEach(link => {
         const url = normalizeUrl(link.url);
-
         const a = document.createElement('a');
         a.className = 'link-btn' + (url ? '' : ' disabled');
         a.rel = 'noopener noreferrer';
 
         if (url) {
             a.href = url;
-            // Force external Safari open even in standalone PWA mode
             a.addEventListener('click', (e) => {
                 e.preventDefault();
                 window.open(url, '_blank');
@@ -178,7 +237,7 @@ function renderBio() {
     });
 }
 
-// --- Editor ---
+// --- Bio Editor ---
 function openEditor() {
     const p = currentProfile;
     document.getElementById('editName').value = p.artistName;
@@ -256,7 +315,241 @@ function saveProfile() {
     renderBio();
 }
 
-// --- Account List ---
+// --- Campaigns ---
+function showCampaigns() {
+    renderCampaignList();
+    showView('campaignsView');
+}
+
+function renderCampaignList() {
+    const list = document.getElementById('campaignList');
+    const empty = document.getElementById('campaignEmpty');
+    const campaigns = currentProfile.campaigns || [];
+
+    if (campaigns.length === 0) {
+        list.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+    }
+
+    empty.style.display = 'none';
+    list.innerHTML = '';
+
+    campaigns.slice().reverse().forEach(c => {
+        const completed = c.days.filter(d => d.done).length;
+        const total = c.days.length;
+        const card = document.createElement('div');
+        card.className = 'campaign-card';
+        card.onclick = () => openCampaign(c.id);
+        card.innerHTML = `
+            <div class="campaign-card-info">
+                <div class="campaign-card-title">${c.title}</div>
+                <div class="campaign-card-meta">${c.type} • ${completed}/${total} done</div>
+            </div>
+            <span class="campaign-card-arrow">›</span>
+        `;
+        list.appendChild(card);
+    });
+}
+
+function showCampaignBuilder() {
+    document.getElementById('campaignSong').value = '';
+    document.getElementById('campaignDate').value = '';
+    document.getElementById('campaignType').value = 'release';
+    showView('campaignBuilderView');
+}
+
+function generateCampaign() {
+    const song = document.getElementById('campaignSong').value.trim() || 'My New Track';
+    const date = document.getElementById('campaignDate').value || 'soon';
+    const type = document.getElementById('campaignType').value;
+    const template = CAMPAIGN_TEMPLATES[type];
+
+    const campaign = {
+        id: uuid(),
+        title: `${template.name}: ${song}`,
+        type: template.name,
+        song: song,
+        date: date,
+        created: new Date().toISOString(),
+        days: template.days({ song, date }).map((d, i) => ({ ...d, id: i, done: false }))
+    };
+
+    currentProfile.campaigns.push(campaign);
+    const accounts = getAccounts();
+    accounts[currentId].data = currentProfile;
+    saveAccounts(accounts);
+
+    openCampaign(campaign.id);
+}
+
+function openCampaign(id) {
+    currentCampaignId = id;
+    const campaign = currentProfile.campaigns.find(c => c.id === id);
+    if (!campaign) return;
+
+    document.getElementById('detailTitle').textContent = campaign.title;
+    document.getElementById('detailMeta').textContent = `${campaign.type} • ${campaign.song}`;
+
+    const container = document.getElementById('campaignDays');
+    container.innerHTML = '';
+
+    campaign.days.forEach((day, idx) => {
+        const div = document.createElement('div');
+        div.className = 'day-card' + (day.done ? ' done' : '');
+        div.innerHTML = `
+            <div class="day-header">
+                <div>
+                    <div class="day-title">Day ${day.day} — ${day.platform}</div>
+                    <div class="day-type">${day.type} • ${day.time}</div>
+                </div>
+                <input type="checkbox" class="day-check" ${day.done ? 'checked' : ''} onchange="toggleDay(${idx})">
+            </div>
+            <div class="day-copy">${escapeHtml(day.copy)}</div>
+            <div class="day-hashtags">${escapeHtml(day.hashtags)}</div>
+            <div class="day-cta">👉 ${escapeHtml(day.cta)}</div>
+            <div class="day-actions">
+                <button class="btn btn-secondary btn-small" onclick="copyText('${escapeJs(day.copy + '\\n\\n' + day.hashtags + '\\n\\n' + day.cta)}')">📋 Copy All</button>
+                <button class="btn btn-secondary btn-small" onclick="shareText('${escapeJs(day.copy + '\\n\\n' + day.hashtags)}')">📤 Share</button>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+
+    showView('campaignDetailView');
+}
+
+function toggleDay(idx) {
+    const campaign = currentProfile.campaigns.find(c => c.id === currentCampaignId);
+    if (!campaign) return;
+    campaign.days[idx].done = !campaign.days[idx].done;
+
+    const accounts = getAccounts();
+    accounts[currentId].data = currentProfile;
+    saveAccounts(accounts);
+
+    openCampaign(currentCampaignId);
+}
+
+function deleteCampaign() {
+    if (!confirm('Delete this campaign?')) return;
+    currentProfile.campaigns = currentProfile.campaigns.filter(c => c.id !== currentCampaignId);
+    const accounts = getAccounts();
+    accounts[currentId].data = currentProfile;
+    saveAccounts(accounts);
+    currentCampaignId = null;
+    showCampaigns();
+}
+
+// --- Promo Image Generator ---
+function openPromoImage() {
+    document.getElementById('promoImageModal').classList.add('active');
+    drawPromoImage();
+}
+
+function closePromoImage() {
+    document.getElementById('promoImageModal').classList.remove('active');
+}
+
+function drawPromoImage() {
+    const canvas = document.getElementById('promoCanvas');
+    const ctx = canvas.getContext('2d');
+    const size = 1080;
+    canvas.width = size;
+    canvas.height = size;
+
+    const p = currentProfile;
+    const title = document.getElementById('promoTitle').value.trim() || p.artistName;
+    const subtitle = document.getElementById('promoSubtitle').value.trim() || 'OUT NOW';
+    const accent = document.getElementById('promoAccent').value;
+
+    // Background
+    const grad = ctx.createLinearGradient(0, 0, size, size);
+    grad.addColorStop(0, '#0a0a1a');
+    grad.addColorStop(1, '#000000');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+
+    // Accent glow
+    ctx.save();
+    ctx.globalAlpha = 0.15;
+    const glow = ctx.createRadialGradient(size/2, size/2, 100, size/2, size/2, 600);
+    glow.addColorStop(0, accent);
+    glow.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, size, size);
+    ctx.restore();
+
+    // Top bar line
+    ctx.fillStyle = accent;
+    ctx.fillRect(80, 80, size - 160, 8);
+
+    // Artist name
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 64px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(p.artistName, size/2, 280);
+
+    // Main title
+    ctx.font = 'bold 120px -apple-system, BlinkMacSystemFont, sans-serif';
+    const words = title.length > 15 ? title.split(' ') : [title];
+    let y = 480;
+    words.forEach((word, i) => {
+        if (i > 0 && title.length > 15) {
+            ctx.fillText(word, size/2, y);
+            y += 140;
+        } else if (i === 0) {
+            ctx.fillText(word, size/2, y);
+        }
+    });
+
+    // Subtitle
+    ctx.fillStyle = accent;
+    ctx.font = 'bold 72px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillText(subtitle, size/2, 780);
+
+    // Bottom branding
+    ctx.fillStyle = '#444444';
+    ctx.font = '36px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillText('McMakeApps', size/2, 980);
+
+    // Bottom line
+    ctx.fillStyle = accent;
+    ctx.globalAlpha = 0.5;
+    ctx.fillRect(80, 1020, size - 160, 4);
+}
+
+function downloadPromoImage() {
+    const canvas = document.getElementById('promoCanvas');
+    const link = document.createElement('a');
+    link.download = 'promo-' + currentProfile.artistName.replace(/\s+/g, '-').toLowerCase() + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+}
+
+// --- Utilities ---
+function copyText(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        // Visual feedback could go here
+    });
+}
+
+function shareText(text) {
+    if (navigator.share) {
+        navigator.share({ text: text });
+    } else {
+        copyText(text);
+    }
+}
+
+function escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function escapeJs(str) {
+    return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n');
+}
+
 function renderAccountList() {
     const accounts = getAccounts();
     const ids = Object.keys(accounts);
