@@ -53,6 +53,15 @@ function showView(id) {
     document.getElementById(id).classList.add('active');
 }
 
+function normalizeUrl(url) {
+    if (!url) return '';
+    url = url.trim();
+    if (!url) return '';
+    if (url.match(/^https?:\/\//i)) return url;
+    if (url.startsWith('mailto:')) return url;
+    return 'https://' + url;
+}
+
 // --- Auth ---
 function login() {
     const nameInput = document.getElementById('artistNameInput');
@@ -146,12 +155,20 @@ function renderBio() {
     }
 
     p.links.forEach(link => {
-        const url = link.url.trim();
+        const url = normalizeUrl(link.url);
+
         const a = document.createElement('a');
         a.className = 'link-btn' + (url ? '' : ' disabled');
-        a.target = '_blank';
         a.rel = 'noopener noreferrer';
-        if (url) a.href = url;
+
+        if (url) {
+            a.href = url;
+            // Force external Safari open even in standalone PWA mode
+            a.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.open(url, '_blank');
+            });
+        }
 
         a.innerHTML = `
             <span class="link-icon">${link.icon}</span>
@@ -216,12 +233,14 @@ function saveProfile() {
 
     document.querySelectorAll('.link-url').forEach(input => {
         const idx = parseInt(input.dataset.idx);
-        p.links[idx].url = input.value.trim();
+        p.links[idx].url = normalizeUrl(input.value);
     });
+
     document.querySelectorAll('.link-label').forEach(input => {
         const idx = parseInt(input.dataset.idx);
         p.links[idx].label = input.value.trim() || p.links[idx].label;
     });
+
     document.querySelectorAll('.link-icon-input').forEach(input => {
         const idx = parseInt(input.dataset.idx);
         p.links[idx].icon = input.value.trim() || p.links[idx].icon;
@@ -270,7 +289,6 @@ function renderAccountList() {
 
 // --- Init ---
 (function init() {
-    // Register service worker
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js')
             .then(() => console.log('SW registered'))
