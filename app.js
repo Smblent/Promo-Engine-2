@@ -1,4 +1,4 @@
-// --- Config ---
+// ==================== CONFIG ====================
 const STORAGE_KEY = 'promoengine_accounts';
 const SESSION_KEY = 'promoengine_current';
 
@@ -10,7 +10,13 @@ const DEFAULT_LINKS = [
     { id: 'bandcamp', label: 'Bandcamp', url: '', icon: '💾' }
 ];
 
-// --- Campaign Templates (Proven Methods) ---
+const FILE_CATEGORIES = {
+    'promo-images': { label: 'Promo Images', folder: 'PromoEngine_PromoImages', icon: '🎨', ext: 'png' },
+    'captions':     { label: 'Captions', folder: 'PromoEngine_Captions', icon: '📝', ext: 'txt' },
+    'campaigns':    { label: 'Campaign Plans', folder: 'PromoEngine_CampaignPlans', icon: '📋', ext: 'md' },
+    'bio-assets':   { label: 'Bio Backups', folder: 'PromoEngine_BioBackups', icon: '💾', ext: 'json' }
+};
+
 const CAMPAIGN_TEMPLATES = {
     release: {
         name: 'New Release Drop',
@@ -62,12 +68,13 @@ const CAMPAIGN_TEMPLATES = {
     }
 };
 
-// --- State ---
+// ==================== STATE ====================
 let currentProfile = null;
 let currentId = '';
 let currentCampaignId = null;
+let fileSystemDirectory = null;
 
-// --- Helpers ---
+// ==================== HELPERS ====================
 function getDefaultProfile(name) {
     return {
         artistName: name || 'Your Artist Name',
@@ -76,7 +83,8 @@ function getDefaultProfile(name) {
         badgeEmoji: '🔴',
         avatarEmoji: '🎵',
         links: JSON.parse(JSON.stringify(DEFAULT_LINKS)),
-        campaigns: []
+        campaigns: [],
+        fileLibrary: []
     };
 }
 
@@ -116,11 +124,104 @@ function normalizeUrl(url) {
     return 'https://' + url;
 }
 
-function uuid() {
-    return 'c_' + Math.random().toString(36).substr(2, 9);
+function uuid(prefix = 'id') {
+    return prefix + '_' + Math.random().toString(36).substr(2, 9);
 }
 
-// --- Auth ---
+function escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function todayStamp() {
+    return new Date().toISOString().split('T')[0].replace(/-/g, '');
+}
+
+function sanitizeFileName(str) {
+    return str.replace(/[^a-z0-9_\-\.]/gi, '_').replace(/_+/g, '_').substring(0, 40);
+}
+
+function buildFileName(category, label, ext) {
+    const cat = FILE_CATEGORIES[category] || { ext: 'txt' };
+    const artist = sanitizeFileName(currentProfile?.artistName || 'Artist');
+    const lbl = sanitizeFileName(label || 'file');
+    const date = todayStamp();
+    const count = ((currentProfile?.fileLibrary?.filter(f => f.category === category).length || 0) + 1).toString().padStart(2, '0');
+    return `${cat.folder}_${count}_${artist}_${lbl}_${date}.${ext || cat.ext}`;
+}
+
+// ==================== FILE SYSTEM & LIBRARY ====================
+function supportsFileSystemAccess() {
+    return 'showDirectoryPicker' in window;
+}
+
+async function pickSaveDirectory() {
+    try {
+        fileSystemDirectory = await window.showDirectoryPicker();
+        alert('Save folder set! Files will now be organized into subfolders automatically.');
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+async function saveFileOrganized(fileName, contentOrBlob, mimeType, category) {
+    const blob = contentOrBlob instanceof Blob ? contentOrBlob : new Blob([contentOrBlob], { type: mimeType });
+    
+    if (fileSystemDirectory) {
+        try {
+            const catInfo = FILE_CATEGORIES[category] || { folder: 'PromoEngine_Files' };
+            const folderHandle = await fileSystemDirectory.getDirectoryHandle(catInfo.folder, { create: true });
+            const fileHandle = await folderHandle.getFileHandle(fileName, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+            return { success: true, method: 'folder' };
+        } catch (e) {
+            console.log('Folder save failed, falling back to download', e);
+        }
+    }
+    
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }, 100);
+    return { success: true, method: 'download' };
+}
+
+function addToLibrary(item) {
+    if (!currentProfile) return;
+    if (!currentProfile.fileLibrary) currentProfile.fileLibrary = [];
+    currentProfile.fileLibrary.unshift(item);
+    if (currentProfile.fileLibrary.length > 60) currentProfile.fileLibrary = currentProfile.fileLibrary.slice(0, 60);
+    saveCurrentProfile();
+}
+
+function removeFromLibrary(fileId) {
+    if (!currentProfile?.fileLibrary) return;
+    currentProfile.fileLibrary = currentProfile.fileLibrary.filter(f => f.id !== fileId);
+    saveCurrentProfile();
+    renderFiles();
+}
+
+function getLibrary() {
+    return currentProfile?.fileLibrary || [];
+}
+
+function saveCurrentProfile() {
+    const accounts = getAccounts();
+    if (accounts[currentId]) {
+        accounts[currentId].data = currentProfile;
+        saveAccounts(accounts);
+    }
+}
+
+// ==================== AUTH ====================
 function login() {
     const nameInput = document.getElementById('artistNameInput');
     const pinInput = document.getElementById('pinInput');
@@ -167,6 +268,7 @@ function logout() {
     currentProfile = null;
     currentId = '';
     currentCampaignId = null;
+    fileSystemDirectory = null;
     showView('loginView');
     renderAccountList();
 }
@@ -180,14 +282,14 @@ function deleteAccount() {
     logout();
 }
 
-// --- Bio App ---
+// ==================== BIO APP ====================
 function loadAccount(id) {
     const accounts = getAccounts();
     if (!accounts[id]) { logout(); return; }
     currentId = id;
     currentProfile = JSON.parse(JSON.stringify(accounts[id].data));
-    // Ensure campaigns array exists for legacy profiles
     if (!currentProfile.campaigns) currentProfile.campaigns = [];
+    if (!currentProfile.fileLibrary) currentProfile.fileLibrary = [];
     renderBio();
     showView('appView');
 }
@@ -237,7 +339,7 @@ function renderBio() {
     });
 }
 
-// --- Bio Editor ---
+// ==================== BIO EDITOR ====================
 function openEditor() {
     const p = currentProfile;
     document.getElementById('editName').value = p.artistName;
@@ -305,17 +407,27 @@ function saveProfile() {
         p.links[idx].icon = input.value.trim() || p.links[idx].icon;
     });
 
-    const accounts = getAccounts();
-    if (accounts[currentId]) {
-        accounts[currentId].data = p;
-        saveAccounts(accounts);
-    }
+    saveCurrentProfile();
+
+    // Auto-backup bio as JSON
+    const backupName = buildFileName('bio-assets', 'BioBackup_' + todayStamp(), 'json');
+    const backupContent = JSON.stringify(p, null, 2);
+    addToLibrary({
+        id: uuid('f'),
+        name: backupName,
+        displayName: `Bio Backup ${todayStamp()}`,
+        category: 'bio-assets',
+        created: new Date().toISOString(),
+        type: 'application/json',
+        size: backupContent.length
+    });
+    saveFileOrganized(backupName, backupContent, 'application/json', 'bio-assets');
 
     closeEditor();
     renderBio();
 }
 
-// --- Campaigns ---
+// ==================== CAMPAIGNS ====================
 function showCampaigns() {
     renderCampaignList();
     showView('campaignsView');
@@ -359,14 +471,14 @@ function showCampaignBuilder() {
     showView('campaignBuilderView');
 }
 
-function generateCampaign() {
+async function generateCampaign() {
     const song = document.getElementById('campaignSong').value.trim() || 'My New Track';
     const date = document.getElementById('campaignDate').value || 'soon';
     const type = document.getElementById('campaignType').value;
     const template = CAMPAIGN_TEMPLATES[type];
 
     const campaign = {
-        id: uuid(),
+        id: uuid('c'),
         title: `${template.name}: ${song}`,
         type: template.name,
         song: song,
@@ -376,11 +488,42 @@ function generateCampaign() {
     };
 
     currentProfile.campaigns.push(campaign);
-    const accounts = getAccounts();
-    accounts[currentId].data = currentProfile;
-    saveAccounts(accounts);
+    saveCurrentProfile();
+
+    // Auto-save campaign plan as markdown
+    const md = buildCampaignMarkdown(campaign);
+    const mdName = buildFileName('campaigns', sanitizeFileName(campaign.title), 'md');
+    addToLibrary({
+        id: uuid('f'),
+        name: mdName,
+        displayName: campaign.title,
+        category: 'campaigns',
+        created: new Date().toISOString(),
+        type: 'text/markdown',
+        size: md.length
+    });
+    await saveFileOrganized(mdName, md, 'text/markdown', 'campaigns');
 
     openCampaign(campaign.id);
+}
+
+function buildCampaignMarkdown(c) {
+    let md = `# ${c.title}\n`;
+    md += `**Type:** ${c.type}  \n`;
+    md += `**Song:** ${c.song}  \n`;
+    md += `**Date:** ${c.date}  \n`;
+    md += `**Generated:** ${new Date(c.created).toLocaleString()}  \n\n`;
+    md += `---\n\n`;
+    c.days.forEach(d => {
+        md += `## Day ${d.day} — ${d.platform}\n`;
+        md += `**Type:** ${d.type}  \n`;
+        md += `**Best Time:** ${d.time}  \n\n`;
+        md += `### Copy\n${d.copy}\n\n`;
+        md += `### Hashtags\n${d.hashtags}\n\n`;
+        md += `### CTA\n${d.cta}\n\n`;
+        md += `---\n\n`;
+    });
+    return md;
 }
 
 function openCampaign(id) {
@@ -409,8 +552,9 @@ function openCampaign(id) {
             <div class="day-hashtags">${escapeHtml(day.hashtags)}</div>
             <div class="day-cta">👉 ${escapeHtml(day.cta)}</div>
             <div class="day-actions">
-                <button class="btn btn-secondary btn-small" onclick="copyText('${escapeJs(day.copy + '\\n\\n' + day.hashtags + '\\n\\n' + day.cta)}')">📋 Copy All</button>
-                <button class="btn btn-secondary btn-small" onclick="shareText('${escapeJs(day.copy + '\\n\\n' + day.hashtags)}')">📤 Share</button>
+                <button class="btn btn-secondary btn-small" onclick="copyDayText(${idx})">📋 Copy All</button>
+                <button class="btn btn-secondary btn-small" onclick="shareDayText(${idx})">📤 Share</button>
+                <button class="btn btn-secondary btn-small" onclick="saveDayCaption(${idx})">💾 Save .txt</button>
             </div>
         `;
         container.appendChild(div);
@@ -423,25 +567,60 @@ function toggleDay(idx) {
     const campaign = currentProfile.campaigns.find(c => c.id === currentCampaignId);
     if (!campaign) return;
     campaign.days[idx].done = !campaign.days[idx].done;
-
-    const accounts = getAccounts();
-    accounts[currentId].data = currentProfile;
-    saveAccounts(accounts);
-
+    saveCurrentProfile();
     openCampaign(currentCampaignId);
 }
 
 function deleteCampaign() {
     if (!confirm('Delete this campaign?')) return;
     currentProfile.campaigns = currentProfile.campaigns.filter(c => c.id !== currentCampaignId);
-    const accounts = getAccounts();
-    accounts[currentId].data = currentProfile;
-    saveAccounts(accounts);
+    saveCurrentProfile();
     currentCampaignId = null;
     showCampaigns();
 }
 
-// --- Promo Image Generator ---
+function copyDayText(idx) {
+    const campaign = currentProfile.campaigns.find(c => c.id === currentCampaignId);
+    if (!campaign) return;
+    const d = campaign.days[idx];
+    const text = `${d.copy}\n\n${d.hashtags}\n\n${d.cta}`;
+    navigator.clipboard.writeText(text);
+}
+
+function shareDayText(idx) {
+    const campaign = currentProfile.campaigns.find(c => c.id === currentCampaignId);
+    if (!campaign) return;
+    const d = campaign.days[idx];
+    const text = `${d.copy}\n\n${d.hashtags}`;
+    if (navigator.share) {
+        navigator.share({ text: text });
+    } else {
+        navigator.clipboard.writeText(text);
+    }
+}
+
+async function saveDayCaption(idx) {
+    const campaign = currentProfile.campaigns.find(c => c.id === currentCampaignId);
+    if (!campaign) return;
+    const d = campaign.days[idx];
+    const text = `${d.copy}\n\n${d.hashtags}\n\n${d.cta}`;
+    const fileName = buildFileName('captions', `Day${d.day}_${d.platform}`, 'txt');
+    
+    addToLibrary({
+        id: uuid('f'),
+        name: fileName,
+        displayName: `Day ${d.day} — ${d.platform}`,
+        category: 'captions',
+        created: new Date().toISOString(),
+        type: 'text/plain',
+        size: text.length
+    });
+    
+    await saveFileOrganized(fileName, text, 'text/plain', 'captions');
+    alert('Caption saved to your organized folder!');
+}
+
+// ==================== PROMO IMAGE ====================
 function openPromoImage() {
     document.getElementById('promoImageModal').classList.add('active');
     drawPromoImage();
@@ -519,37 +698,63 @@ function drawPromoImage() {
     ctx.fillRect(80, 1020, size - 160, 4);
 }
 
-function downloadPromoImage() {
+async function downloadPromoImage() {
     const canvas = document.getElementById('promoCanvas');
-    const link = document.createElement('a');
-    link.download = 'promo-' + currentProfile.artistName.replace(/\s+/g, '-').toLowerCase() + '.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    const fileName = buildFileName('promo-images', sanitizeFileName(currentProfile.artistName) + '_Promo', 'png');
+    
+    addToLibrary({
+        id: uuid('f'),
+        name: fileName,
+        displayName: `Promo Image — ${currentProfile.artistName}`,
+        category: 'promo-images',
+        created: new Date().toISOString(),
+        type: 'image/png',
+        size: blob.size
+    });
+    
+    await saveFileOrganized(fileName, blob, 'image/png', 'promo-images');
+    alert('Promo image saved to your organized folder!');
 }
 
-// --- Utilities ---
-function copyText(text) {
-    navigator.clipboard.writeText(text).then(() => {
-        // Visual feedback could go here
+// ==================== FILE LIBRARY ====================
+function showFiles() {
+    renderFiles();
+    showView('filesView');
+}
+
+function renderFiles() {
+    const list = document.getElementById('fileList');
+    const empty = document.getElementById('filesEmpty');
+    const files = getLibrary();
+
+    if (files.length === 0) {
+        list.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+    }
+
+    empty.style.display = 'none';
+    list.innerHTML = '';
+
+    files.forEach(f => {
+        const cat = FILE_CATEGORIES[f.category] || { icon: '📄', label: 'File' };
+        const size = f.size ? (f.size > 1024 ? (f.size/1024).toFixed(1) + ' KB' : f.size + ' B') : '';
+        const card = document.createElement('div');
+        card.className = 'file-card';
+        card.innerHTML = `
+            <div class="file-icon">${cat.icon}</div>
+            <div class="file-info">
+                <div class="file-name">${escapeHtml(f.displayName)}</div>
+                <div class="file-meta">${cat.label} • ${new Date(f.created).toLocaleDateString()} ${size ? '• ' + size : ''}</div>
+            </div>
+            <button class="btn btn-danger btn-small" onclick="removeFromLibrary('${f.id}')" style="width:auto;">🗑</button>
+        `;
+        list.appendChild(card);
     });
 }
 
-function shareText(text) {
-    if (navigator.share) {
-        navigator.share({ text: text });
-    } else {
-        copyText(text);
-    }
-}
-
-function escapeHtml(str) {
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-function escapeJs(str) {
-    return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n');
-}
-
+// ==================== ACCOUNT LIST ====================
 function renderAccountList() {
     const accounts = getAccounts();
     const ids = Object.keys(accounts);
@@ -580,7 +785,7 @@ function renderAccountList() {
     });
 }
 
-// --- Init ---
+// ==================== INIT ====================
 (function init() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js')
