@@ -6,6 +6,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#000000">
+    <meta name="description" content="Create and share your artist promo page.">
+    <link rel="manifest" href="./manifest.json">
     <title>Promo Engine</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -35,7 +37,6 @@
             -moz-osx-font-smoothing: grayscale;
         }
 
-        /* Views */
         .view {
             display: none;
             min-height: 100vh;
@@ -56,12 +57,10 @@
             align-items: center;
         }
 
-        /* Typography */
         h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 0.5rem; }
         h2 { font-size: 22px; font-weight: 700; margin-bottom: 1.5rem; text-align: center; }
         .subtitle { color: var(--text-secondary); font-size: 16px; margin-bottom: 2rem; text-align: center; }
 
-        /* Forms */
         .form-group {
             width: 100%;
             margin-bottom: 1rem;
@@ -137,7 +136,6 @@
             width: auto;
         }
 
-        /* Account List */
         .account-list {
             width: 100%;
             display: flex;
@@ -169,7 +167,6 @@
         }
         .account-name { font-weight: 700; font-size: 15px; }
 
-        /* Bio Page */
         .top-bar {
             position: fixed;
             top: 0; left: 0; right: 0;
@@ -249,7 +246,6 @@
             font-weight: 500;
         }
 
-        /* Modal */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -333,7 +329,7 @@
     <!-- LOGIN VIEW -->
     <div id="loginView" class="view active">
         <div class="container">
-            <div style="font-size: 48px; margin-bottom: 1rem;">&#127925;</div>
+            <div style="font-size: 48px; margin-bottom: 1rem;">🎵</div>
             <h1>Promo Engine</h1>
             <p class="subtitle">Create or select an artist profile</p>
 
@@ -359,19 +355,17 @@
     <!-- APP VIEW -->
     <div id="appView" class="view">
         <div class="top-bar">
-            <button class="btn btn-secondary btn-small" onclick="openEditor()">&#9998; Edit</button>
+            <button class="btn btn-secondary btn-small" onclick="openEditor()">✏ Edit</button>
             <button class="btn btn-secondary btn-small" onclick="logout()">Switch Account</button>
         </div>
 
         <div class="container">
-            <div class="avatar" id="displayAvatar" role="img" aria-label="Artist avatar">&#127925;</div>
-            <div class="badge" id="displayBadge"><span id="displayBadgeEmoji">&#128308;</span> <span id="displayBadgeText">NEW MUSIC OUT NOW</span></div>
+            <div class="avatar" id="displayAvatar" role="img" aria-label="Artist avatar">🎵</div>
+            <div class="badge" id="displayBadge"><span id="displayBadgeEmoji">🔴</span> <span id="displayBadgeText">NEW MUSIC OUT NOW</span></div>
             <h1 id="displayName">Your Artist Name</h1>
             <p class="subtitle" id="displaySubtitle">Latest single streaming everywhere</p>
 
-            <nav class="links" id="linksContainer" aria-label="Social and streaming links">
-                <!-- Links injected here -->
-            </nav>
+            <nav class="links" id="linksContainer" aria-label="Social and streaming links"></nav>
 
             <div class="footer">Promo Engine</div>
         </div>
@@ -424,285 +418,6 @@
         </div>
     </div>
 
-    <script>
-        // --- Data & State ---
-        const STORAGE_KEY = 'promoengine_accounts';
-        const SESSION_KEY = 'promoengine_current';
-
-        const DEFAULT_LINKS = [
-            { id: 'spotify', label: 'Spotify', url: '', icon: '&#127925;' },
-            { id: 'apple', label: 'Apple Music', url: '', icon: '&#127822;' },
-            { id: 'youtube', label: 'YouTube', url: '', icon: '&#9654;' },
-            { id: 'soundcloud', label: 'SoundCloud', url: '', icon: '&#9729;' },
-            { id: 'bandcamp', label: 'Bandcamp', url: '', icon: '&#128190;' }
-        ];
-
-        function getDefaultProfile(name) {
-            return {
-                artistName: name || 'Your Artist Name',
-                subtitle: 'Latest single streaming everywhere',
-                badgeText: 'NEW MUSIC OUT NOW',
-                badgeEmoji: '🔴',
-                avatarEmoji: '🎵',
-                links: JSON.parse(JSON.stringify(DEFAULT_LINKS))
-            };
-        }
-
-        function getAccounts() {
-            try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
-            catch { return {}; }
-        }
-
-        function saveAccounts(accounts) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
-        }
-
-        function getCurrentAccountId() {
-            return localStorage.getItem(SESSION_KEY) || '';
-        }
-
-        function setCurrentAccountId(id) {
-            if (id) localStorage.setItem(SESSION_KEY, id);
-            else localStorage.removeItem(SESSION_KEY);
-        }
-
-        let currentProfile = null;
-        let currentId = '';
-
-        // --- Auth ---
-        function slugify(name) {
-            return name.toLowerCase().trim().replace(/\s+/g, '_').replace(/[^\w]/g, '');
-        }
-
-        function login() {
-            const nameInput = document.getElementById('artistNameInput');
-            const pinInput = document.getElementById('pinInput');
-            const name = nameInput.value.trim();
-
-            if (!name) {
-                nameInput.style.borderColor = 'var(--danger)';
-                setTimeout(() => nameInput.style.borderColor = '', 1000);
-                return;
-            }
-
-            const id = slugify(name);
-            const accounts = getAccounts();
-
-            if (!accounts[id]) {
-                accounts[id] = {
-                    pin: pinInput.value || '',
-                    data: getDefaultProfile(name)
-                };
-                saveAccounts(accounts);
-            } else {
-                // Optional PIN check if one was set
-                if (accounts[id].pin && accounts[id].pin !== pinInput.value) {
-                    pinInput.style.borderColor = 'var(--danger)';
-                    setTimeout(() => pinInput.style.borderColor = '', 1000);
-                    alert('Incorrect PIN');
-                    return;
-                }
-            }
-
-            setCurrentAccountId(id);
-            loadAccount(id);
-        }
-
-        function switchToAccount(id) {
-            const accounts = getAccounts();
-            if (accounts[id]) {
-                setCurrentAccountId(id);
-                loadAccount(id);
-            }
-        }
-
-        function logout() {
-            setCurrentAccountId('');
-            currentProfile = null;
-            currentId = '';
-            showView('loginView');
-            renderAccountList();
-        }
-
-        function deleteAccount() {
-            if (!confirm('Delete this account and all its data? This cannot be undone.')) return;
-            const accounts = getAccounts();
-            delete accounts[currentId];
-            saveAccounts(accounts);
-            closeEditor();
-            logout();
-        }
-
-        // --- App ---
-        function loadAccount(id) {
-            const accounts = getAccounts();
-            if (!accounts[id]) { logout(); return; }
-            currentId = id;
-            currentProfile = JSON.parse(JSON.stringify(accounts[id].data));
-            renderBio();
-            showView('appView');
-        }
-
-        function renderBio() {
-            const p = currentProfile;
-            document.getElementById('displayName').textContent = p.artistName;
-            document.getElementById('displaySubtitle').textContent = p.subtitle;
-            document.getElementById('displayBadgeText').textContent = p.badgeText;
-            document.getElementById('displayBadgeEmoji').textContent = p.badgeEmoji;
-            document.getElementById('displayAvatar').textContent = p.avatarEmoji;
-
-            const container = document.getElementById('linksContainer');
-            container.innerHTML = '';
-
-            const hasLinks = p.links.some(l => l.url.trim() !== '');
-
-            if (!hasLinks) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        No links added yet.<br>
-                        Tap <strong>Edit</strong> to add your streaming links.
-                    </div>
-                `;
-                return;
-            }
-
-            p.links.forEach(link => {
-                const url = link.url.trim();
-                const a = document.createElement('a');
-                a.className = 'link-btn' + (url ? '' : ' disabled');
-                a.target = '_blank';
-                a.rel = 'noopener noreferrer';
-                if (url) a.href = url;
-
-                a.innerHTML = `
-                    <span class="link-icon">${link.icon}</span>
-                    <span>${link.label}</span>
-                `;
-                container.appendChild(a);
-            });
-        }
-
-        // --- Editor ---
-        function openEditor() {
-            const p = currentProfile;
-            document.getElementById('editName').value = p.artistName;
-            document.getElementById('editSubtitle').value = p.subtitle;
-            document.getElementById('editBadgeEmoji').value = p.badgeEmoji;
-            document.getElementById('editBadgeText').value = p.badgeText;
-            document.getElementById('editAvatar').value = p.avatarEmoji;
-
-            const editors = document.getElementById('linkEditors');
-            editors.innerHTML = '';
-
-            p.links.forEach((link, idx) => {
-                const div = document.createElement('div');
-                div.className = 'link-editor';
-                div.innerHTML = `
-                    <div class="link-editor-header">
-                        <span>${link.icon}</span>
-                        <span>${link.label}</span>
-                    </div>
-                    <div class="form-group" style="margin-bottom:8px;">
-                        <label style="font-size:11px;">URL</label>
-                        <input type="url" class="link-url" data-idx="${idx}" value="${link.url}" placeholder="https://...">
-                    </div>
-                    <div class="row">
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label style="font-size:11px;">Label</label>
-                            <input type="text" class="link-label" data-idx="${idx}" value="${link.label}">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label style="font-size:11px;">Icon (emoji)</label>
-                            <input type="text" class="link-icon-input" data-idx="${idx}" value="${link.icon}" maxlength="4">
-                        </div>
-                    </div>
-                `;
-                editors.appendChild(div);
-            });
-
-            document.getElementById('editorModal').classList.add('active');
-        }
-
-        function closeEditor() {
-            document.getElementById('editorModal').classList.remove('active');
-        }
-
-        function saveProfile() {
-            const p = currentProfile;
-            p.artistName = document.getElementById('editName').value.trim() || p.artistName;
-            p.subtitle = document.getElementById('editSubtitle').value.trim();
-            p.badgeEmoji = document.getElementById('editBadgeEmoji').value.trim();
-            p.badgeText = document.getElementById('editBadgeText').value.trim();
-            p.avatarEmoji = document.getElementById('editAvatar').value.trim();
-
-            document.querySelectorAll('.link-url').forEach(input => {
-                const idx = parseInt(input.dataset.idx);
-                p.links[idx].url = input.value.trim();
-            });
-            document.querySelectorAll('.link-label').forEach(input => {
-                const idx = parseInt(input.dataset.idx);
-                p.links[idx].label = input.value.trim() || p.links[idx].label;
-            });
-            document.querySelectorAll('.link-icon-input').forEach(input => {
-                const idx = parseInt(input.dataset.idx);
-                p.links[idx].icon = input.value.trim() || p.links[idx].icon;
-            });
-
-            const accounts = getAccounts();
-            if (accounts[currentId]) {
-                accounts[currentId].data = p;
-                saveAccounts(accounts);
-            }
-
-            closeEditor();
-            renderBio();
-        }
-
-        // --- UI Helpers ---
-        function showView(id) {
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-        }
-
-        function renderAccountList() {
-            const accounts = getAccounts();
-            const ids = Object.keys(accounts);
-            const section = document.getElementById('savedAccountsSection');
-            const list = document.getElementById('accountList');
-
-            if (ids.length === 0) {
-                section.style.display = 'none';
-                return;
-            }
-
-            section.style.display = 'block';
-            list.innerHTML = '';
-
-            ids.forEach(id => {
-                const acc = accounts[id];
-                const card = document.createElement('div');
-                card.className = 'account-card';
-                card.onclick = () => switchToAccount(id);
-                card.innerHTML = `
-                    <div class="account-info">
-                        <div class="account-avatar">${acc.data.avatarEmoji || '&#127925;'}</div>
-                        <div class="account-name">${acc.data.artistName}</div>
-                    </div>
-                    <span style="color:var(--text-muted); font-size:13px;">&#10132;</span>
-                `;
-                list.appendChild(card);
-            });
-        }
-
-        // --- Init ---
-        (function init() {
-            const savedId = getCurrentAccountId();
-            if (savedId) {
-                loadAccount(savedId);
-            } else {
-                renderAccountList();
-            }
-        })();
-    </script>
+    <script src="./app.js"></script>
 </body>
 </html>
