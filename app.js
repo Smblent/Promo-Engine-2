@@ -2,6 +2,27 @@
 const STORAGE_KEY = 'promoengine_accounts';
 const SESSION_KEY = 'promoengine_current';
 
+const CONTENT_TYPES = [
+    { id: 'song', label: 'Song / Track', icon: '🎵', article: 'a' },
+    { id: 'album', label: 'Album / EP', icon: '💿', article: 'an' },
+    { id: 'video', label: 'Video', icon: '🎬', article: 'a' },
+    { id: 'playlist', label: 'Playlist', icon: '📋', article: 'a' },
+    { id: 'channel', label: 'Channel / Account', icon: '👤', article: 'a' },
+    { id: 'page', label: 'Link Page / Bio', icon: '🔗', article: 'a' }
+];
+
+const PLATFORMS = [
+    { id: 'spotify', label: 'Spotify', pattern: /open\.spotify\.com|spotify\.com/ },
+    { id: 'apple', label: 'Apple Music', pattern: /music\.apple\.com/ },
+    { id: 'youtube', label: 'YouTube', pattern: /youtube\.com|youtu\.be/ },
+    { id: 'soundcloud', label: 'SoundCloud', pattern: /soundcloud\.com/ },
+    { id: 'bandcamp', label: 'Bandcamp', pattern: /bandcamp\.com/ },
+    { id: 'instagram', label: 'Instagram', pattern: /instagram\.com/ },
+    { id: 'tiktok', label: 'TikTok', pattern: /tiktok\.com/ },
+    { id: 'twitter', label: 'X / Twitter', pattern: /twitter\.com|x\.com/ },
+    { id: 'other', label: 'Other', pattern: /.*/ }
+];
+
 const DEFAULT_LINKS = [
     { id: 'spotify', label: 'Spotify', url: '', icon: '🎵' },
     { id: 'apple', label: 'Apple Music', url: '', icon: '🍎' },
@@ -17,53 +38,236 @@ const FILE_CATEGORIES = {
     'bio-assets':   { label: 'Bio Backups', folder: 'PromoEngine_BioBackups', icon: '💾', ext: 'json' }
 };
 
+const CAMPAIGN_GOALS = {
+    awareness:   { label: 'Awareness', desc: 'Get discovered by new fans', icon: '👁' },
+    engagement:  { label: 'Engagement', desc: 'Comments, shares, duets', icon: '💬' },
+    conversion:  { label: 'Conversion', desc: 'Streams, follows, saves', icon: '🎯' },
+    retention:   { label: 'Retention', desc: 'Keep fans coming back', icon: '🔁' },
+    crosspromo:  { label: 'Cross-Promo', desc: 'Push fans to another platform', icon: '🔀' }
+};
+
+// ==================== CAMPAIGN TEMPLATES ====================
 const CAMPAIGN_TEMPLATES = {
-    release: {
-        name: 'New Release Drop',
-        desc: '7-day buildup + drop strategy',
-        days: (d) => [
-            { day: 1, platform: 'Instagram', type: 'Story Teaser', time: '6:00 PM', copy: `👀 Something new is coming…\n\n${d.song} drops ${d.date}.`, hashtags: '#NewMusic #Teaser #ComingSoon', cta: 'Turn on post notifications 🔊' },
-            { day: 2, platform: 'TikTok / Reels', type: 'Behind the Beat', time: '12:00 PM', copy: `The making of ${d.song} 🎧\n\nThis one hit different in the studio.`, hashtags: '#BehindTheScenes #Studio #MusicProduction', cta: 'Follow for the full drop' },
-            { day: 3, platform: 'Instagram / X', type: 'Pre-Save Push', time: '5:00 PM', copy: `🚨 Pre-save ${d.song} now.\n\nLink in bio. Every pre-save helps the algorithm push this to new fans.`, hashtags: '#PreSave #NewMusicFriday #IndieArtist', cta: 'Tag 2 friends who need this track' },
-            { day: 4, platform: 'Instagram Story', type: 'Countdown', time: '8:00 PM', copy: `⏰ 2 days until ${d.song} is live everywhere.\n\nWho’s ready?`, hashtags: '#Countdown #NewMusic', cta: 'Reply with a 🔥 if you’re waiting' },
-            { day: 5, platform: 'TikTok / Reels', type: 'Snippet / Hook', time: '11:00 AM', copy: `This hook has been stuck in my head for weeks…\n\n${d.song} drops ${d.date}.`, hashtags: '#Snippet #Viral #NewMusic', cta: 'Duet this if it hits' },
-            { day: 6, platform: 'ALL PLATFORMS', type: 'RELEASE DAY', time: '9:00 AM', copy: `🚀 ${d.song} IS OUT NOW EVERYWHERE.\n\nRun it up. Stream, save, share. Let’s move.`, hashtags: '#OutNow #NewMusic #StreamNow', cta: 'Screenshot your stream & tag me' },
-            { day: 7, platform: 'Instagram / X', type: 'Thank You / UGC', time: '7:00 PM', copy: `Y’all showed MAD love on ${d.song} today.\n\nKeep tagging me in your stories — I’m reposting all night.`, hashtags: '#FanLove #Repost #IndieMusic', cta: 'Drop your favorite lyric below' }
+    song: {
+        awareness: (d) => [
+            { day: 1, platform: 'Instagram', type: 'Story Teaser', time: '6:00 PM', copy: `👀 Something new is coming…\n\n${d.title} drops ${d.date || 'soon'}.`, hashtags: '#NewMusic #Teaser #ComingSoon', cta: 'Turn on post notifications 🔊' },
+            { day: 2, platform: 'TikTok / Reels', type: 'Behind the Beat', time: '12:00 PM', copy: `The making of ${d.title} 🎧\n\nThis one hit different in the studio.`, hashtags: '#BehindTheScenes #Studio #MusicProduction', cta: 'Follow for the full drop' },
+            { day: 3, platform: 'Instagram / X', type: 'Pre-Save Push', time: '5:00 PM', copy: `🚨 ${d.title} is coming.\n\n${d.url ? 'Link in bio.' : 'Every pre-save helps the algorithm push this to new fans.'}`, hashtags: '#PreSave #NewMusicFriday #IndieArtist', cta: 'Tag 2 friends who need this track' },
+            { day: 4, platform: 'Instagram Story', type: 'Countdown', time: '8:00 PM', copy: `⏰ Almost here.\n\n${d.title} — ${d.date || 'soon'}.`, hashtags: '#Countdown #NewMusic', cta: 'Reply with a 🔥 if you’re waiting' },
+            { day: 5, platform: 'TikTok / Reels', type: 'Snippet / Hook', time: '11:00 AM', copy: `This hook has been stuck in my head for weeks…\n\n${d.title}`, hashtags: '#Snippet #Viral #NewMusic', cta: 'Duet this if it hits' }
+        ],
+        engagement: (d) => [
+            { day: 1, platform: 'TikTok / Reels', type: 'Hook Challenge', time: '12:00 PM', copy: `I dare you to not move when this hook drops 😤\n\n${d.title}`, hashtags: '#HookChallenge #Viral', cta: 'Use this sound & show your reaction' },
+            { day: 2, platform: 'TikTok / Reels', type: 'Duet Prompt', time: '11:00 AM', copy: `Drop a verse on this beat.\n\nBest one gets pinned.`, hashtags: '#OpenVerse #Duet', cta: 'Duet this — no rules' },
+            { day: 3, platform: 'Instagram Story', type: 'Poll / Engage', time: '6:00 PM', copy: `Which hits harder: the beat or the lyrics?`, hashtags: '#Poll #Engage', cta: 'Vote & share to your story' },
+            { day: 4, platform: 'TikTok / Reels', type: 'Trending Sound Flip', time: '1:00 PM', copy: `When the trending sound meets ${d.title}…`, hashtags: '#Trending #Remix', cta: 'Stitch this flip' },
+            { day: 5, platform: 'All Platforms', type: 'UGC Repost', time: '12:00 PM', copy: `Y’all went CRAZY on this sound.\n\nHere are my favorites from this week.`, hashtags: '#UGC #Repost #Community', cta: 'Keep posting — I’m watching' }
+        ],
+        conversion: (d) => [
+            { day: 1, platform: 'Instagram / X', type: 'Direct Link Push', time: '5:00 PM', copy: `${d.title} is live.\n\n${d.url || 'Link in bio.'}\n\nStream it. Save it. Add it to your playlist.`, hashtags: '#OutNow #StreamNow', cta: 'Screenshot your stream & tag me' },
+            { day: 2, platform: 'Instagram Story', type: 'Swipe Up / Link', time: '8:00 PM', copy: `Running it up on ${d.platform || 'streaming'} 🚀`, hashtags: '#Stream', cta: 'Tap the link — 30 seconds helps the algorithm' },
+            { day: 3, platform: 'TikTok / Reels', type: 'Reaction Bait', time: '12:00 PM', copy: `POV: you just heard ${d.title} for the first time`, hashtags: '#Reaction #FirstListen', cta: 'Stream link in bio' },
+            { day: 4, platform: 'Instagram / X', type: 'Playlist Push', time: '6:00 PM', copy: `Add ${d.title} to your playlist and screenshot it.\n\nBest playlist name wins a repost.`, hashtags: '#PlaylistChallenge', cta: 'Link in bio' },
+            { day: 5, platform: 'All Platforms', type: 'Thank You / FOMO', time: '7:00 PM', copy: `${d.title} just hit [X] streams.\n\nIf you haven’t run it up yet, you’re missing out.`, hashtags: '#FOMO #StreamNow', cta: 'Link in bio — go now' }
+        ],
+        retention: (d) => [
+            { day: 1, platform: 'Instagram Story', type: 'Lyric Drop', time: '6:00 PM', copy: `“[Pull a lyric from ${d.title}]”`, hashtags: '#Lyrics #Quote', cta: 'Guess the next line' },
+            { day: 2, platform: 'TikTok / Reels', type: 'Acoustic / Alternate', time: '12:00 PM', copy: `${d.title} — acoustic version. Should I drop the full thing?`, hashtags: '#Acoustic #Unplugged', cta: 'Comment YES if you want it' },
+            { day: 3, platform: 'Instagram / X', type: 'Fan Feature', time: '5:00 PM', copy: `Y’all have been tagging me in your ${d.title} stories.\n\nI see every single one. Keep going.`, hashtags: '#FanLove #Repost', cta: 'Tag me — I’m reposting tonight' },
+            { day: 4, platform: 'TikTok / Reels', type: 'BTS / Process', time: '11:00 AM', copy: `The version of ${d.title} you never heard…`, hashtags: '#BTS #Demo', cta: 'Follow so you don’t miss drops' },
+            { day: 5, platform: 'All Platforms', type: 'Next Tease', time: '7:00 PM', copy: `${d.title} was just the beginning.\n\nWait until you hear what’s next.`, hashtags: '#Teaser #ComingSoon', cta: 'Turn on notifications' }
+        ],
+        crosspromo: (d) => [
+            { day: 1, platform: 'Instagram / X', type: 'Platform Jump', time: '5:00 PM', copy: `I just dropped something new on ${d.platform || 'my page'}.\n\nGo follow me there for the full experience.`, hashtags: '#Follow', cta: 'Link in bio' },
+            { day: 2, platform: 'TikTok / Reels', type: 'Exclusive Snippet', time: '12:00 PM', copy: `This version of ${d.title} is ONLY on ${d.platform || 'my page'} 👀`, hashtags: '#Exclusive #OnlyHere', cta: 'Link in bio — don’t miss it' },
+            { day: 3, platform: 'Instagram Story', type: 'Countdown to Move', time: '8:00 PM', copy: `Moving the conversation to ${d.platform || 'my page'}.\n\nSee you there.`, hashtags: '#LinkInBio', cta: 'Tap & follow' },
+            { day: 4, platform: 'All Platforms', type: 'Value Prop', time: '11:00 AM', copy: `Why ${d.platform || 'my page'}? Because I drop stuff there first.\n\nAlways.`, hashtags: '#First #Exclusive', cta: 'Link in bio — join the inner circle' },
+            { day: 5, platform: 'All Platforms', type: 'Results', time: '7:00 PM', copy: `Y’all moved. The numbers don’t lie.\n\n${d.platform || 'Page'} fam is growing fast.`, hashtags: '#Growth #Community', cta: 'Still not there? Link in bio' }
+        ]
+    },
+    album: {
+        awareness: (d) => [
+            { day: 1, platform: 'Instagram / X', type: 'Cover Reveal', time: '6:00 PM', copy: `${d.title}\n\nThe cover. The tracklist. The vibe.\n\n${d.date || 'Coming soon'}.`, hashtags: '#AlbumReveal #Tracklist', cta: 'Save this post' },
+            { day: 2, platform: 'TikTok / Reels', type: 'Track-by-Track Tease', time: '12:00 PM', copy: `Track 1 from ${d.title} — this one sets the tone.`, hashtags: '#TrackByTrack #Album', cta: 'Guess Track 2 in comments' },
+            { day: 3, platform: 'Instagram Story', type: 'Mood Board', time: '8:00 PM', copy: `Three words that describe ${d.title}:`, hashtags: '#MoodBoard #Aesthetic', cta: 'Reply with YOUR three words' },
+            { day: 4, platform: 'YouTube / TikTok', type: 'Trailer / Snippet', time: '5:00 PM', copy: `${d.title} — 30 seconds that will make you pre-save.`, hashtags: '#Trailer #Snippet', cta: 'Pre-save link in bio' },
+            { day: 5, platform: 'All Platforms', type: 'Drop Day', time: '9:00 AM', copy: `${d.title} IS OUT NOW.\n\nEvery platform. Everywhere.`, hashtags: '#AlbumOutNow #StreamNow', cta: 'Run it up — link in bio' }
+        ],
+        engagement: (d) => [
+            { day: 1, platform: 'Instagram / X', type: 'Favorite Track Poll', time: '5:00 PM', copy: `What’s your favorite track on ${d.title} so far?`, hashtags: '#Poll #FavoriteTrack', cta: 'Vote & debate in comments' },
+            { day: 2, platform: 'TikTok / Reels', type: 'Rank Challenge', time: '12:00 PM', copy: `Rank the tracks on ${d.title} from best to worst.\n\nI’ll start.`, hashtags: '#Rank #Challenge', cta: 'Stitch your ranking' },
+            { day: 3, platform: 'Instagram Story', type: 'Q&A', time: '8:00 PM', copy: `Ask me anything about ${d.title}.\n\nProduction, lyrics, meaning — go.`, hashtags: '#AMA #AskMeAnything', cta: 'Reply with your question' },
+            { day: 4, platform: 'TikTok / Reels', type: 'Reaction Compilation', time: '11:00 AM', copy: `The best reactions to ${d.title} so far…`, hashtags: '#Reaction #Compilation', cta: 'Tag me in yours' },
+            { day: 5, platform: 'All Platforms', type: 'Fan Art / UGC', time: '7:00 PM', copy: `The art y’all made for ${d.title} is insane.\n\nHere are my favorites.`, hashtags: '#FanArt #UGC', cta: 'Keep creating — I’m reposting' }
+        ],
+        conversion: (d) => [
+            { day: 1, platform: 'Instagram / X', type: 'Pre-Order / Pre-Save', time: '5:00 PM', copy: `${d.title} drops ${d.date || 'soon'}.\n\nPre-save now and get early access to [bonus].`, hashtags: '#PreSave #PreOrder', cta: 'Link in bio — takes 10 seconds' },
+            { day: 2, platform: 'Instagram Story', type: 'Limited Offer', time: '8:00 PM', copy: `First 100 people to save ${d.title} get [reward].`, hashtags: '#Limited #SaveNow', cta: 'Screenshot your save & DM me' },
+            { day: 3, platform: 'TikTok / Reels', type: 'Value Stack', time: '12:00 PM', copy: `${d.title} isn’t just music. It’s [merch/experience/bonus] too.`, hashtags: '#Bundle #Value', cta: 'Link in bio for everything' },
+            { day: 4, platform: 'All Platforms', type: 'Social Proof', time: '6:00 PM', copy: `${d.title} just hit [X] pre-saves.\n\nY’all are different. Thank you.`, hashtags: '#Grateful #Numbers', cta: 'Still haven’t? Link in bio' },
+            { day: 5, platform: 'All Platforms', type: 'FOMO Close', time: '9:00 PM', copy: `Last call before ${d.title} drops.\n\nThe train is leaving.`, hashtags: '#LastChance #FOMO', cta: 'Link in bio — now or never' }
+        ],
+        retention: (d) => [
+            { day: 1, platform: 'Instagram Story', type: 'Deep Dive', time: '6:00 PM', copy: `The story behind Track 3 on ${d.title}…`, hashtags: '#Storytime #BehindTheMusic', cta: 'Reply for more track stories' },
+            { day: 2, platform: 'YouTube / TikTok', type: 'Live Performance', time: '8:00 PM', copy: `${d.title} — live and unplugged.`, hashtags: '#Live #Unplugged', cta: 'Comment which track next' },
+            { day: 3, platform: 'Instagram / X', type: 'Easter Eggs', time: '5:00 PM', copy: `There are 3 easter eggs hidden in ${d.title}.\n\nNobody has found all of them yet.`, hashtags: '#EasterEgg #Hidden', cta: 'Found one? Comment the timestamp' },
+            { day: 4, platform: 'TikTok / Reels', type: 'Process Reveal', time: '11:00 AM', copy: `${d.title} took [X months/years]. Here’s the timeline.`, hashtags: '#Process #Journey', cta: 'Follow for the full documentary' },
+            { day: 5, platform: 'All Platforms', type: 'Community', time: '7:00 PM', copy: `${d.title} wouldn’t exist without y’all.\n\nThe next one is already cooking because of you.`, hashtags: '#Community #ThankYou', cta: 'Turn on notifications for the next drop' }
+        ],
+        crosspromo: (d) => [
+            { day: 1, platform: 'Instagram / X', type: 'Platform Exclusive', time: '5:00 PM', copy: `The deluxe version of ${d.title} is only on ${d.platform || 'my page'}.`, hashtags: '#Deluxe #Exclusive', cta: 'Link in bio — you’re missing out' },
+            { day: 2, platform: 'TikTok / Reels', type: 'Why Move', time: '12:00 PM', copy: `I post stuff on ${d.platform || 'my page'} that never makes it here.`, hashtags: '#ExclusiveContent', cta: 'Link in bio — join the real community' },
+            { day: 3, platform: 'Instagram Story', type: 'Countdown', time: '8:00 PM', copy: `Something big drops on ${d.platform || 'my page'} first.\n\nAlways.`, hashtags: '#FirstLook', cta: 'Tap the link & turn on alerts' },
+            { day: 4, platform: 'All Platforms', type: 'Proof', time: '11:00 AM', copy: `${d.platform || 'Page'} followers heard ${d.title} 2 weeks early.\n\nDon’t be late next time.`, hashtags: '#EarlyAccess #OGArtist', cta: 'Link in bio — never miss again' },
+            { day: 5, platform: 'All Platforms', type: 'Community Migration', time: '7:00 PM', copy: `The real conversation about ${d.title} is happening on ${d.platform || 'my page'}.\n\nNot here.`, hashtags: '#RealTalk #Community', cta: 'Link in bio — pull up' }
+        ]
+    },
+    video: {
+        awareness: (d) => [
+            { day: 1, platform: 'Instagram / X', type: 'Thumbnail Tease', time: '6:00 PM', copy: `New video drops ${d.date || 'soon'}.\n\nHere’s a frame you haven’t seen.`, hashtags: '#VideoDrop #Premiere', cta: 'Guess the concept in comments' },
+            { day: 2, platform: 'TikTok / Reels', type: 'Behind the Scenes', time: '12:00 PM', copy: `The ${d.title} video almost didn’t happen. Here’s why…`, hashtags: '#BTS #VideoProduction', cta: 'Follow for the full story' },
+            { day: 3, platform: 'YouTube / Instagram', type: 'Premiere Link', time: '5:00 PM', copy: `${d.title} premieres ${d.date || 'soon'}.\n\nSet your reminder.`, hashtags: '#Premiere #SetReminder', cta: 'Link in bio — don’t miss it' },
+            { day: 4, platform: 'Instagram Story', type: 'Countdown', time: '8:00 PM', copy: `⏰ ${d.title} goes live in 24 hours.`, hashtags: '#Countdown #Premiere', cta: 'Turn on post notifications' },
+            { day: 5, platform: 'All Platforms', type: 'LIVE', time: '12:00 PM', copy: `${d.title} IS LIVE NOW.\n\nGo watch. Comment. Share.`, hashtags: '#OutNow #WatchNow', cta: 'Link in bio — run it up' }
+        ],
+        engagement: (d) => [
+            { day: 1, platform: 'YouTube / TikTok', type: 'Comment Bait', time: '12:00 PM', copy: `The part of ${d.title} that broke the internet…`, hashtags: '#ViralMoment #CommentBait', cta: 'Comment the timestamp that got you' },
+            { day: 2, platform: 'Instagram / X', type: 'Poll', time: '6:00 PM', copy: `Favorite scene from ${d.title}?`, hashtags: '#Poll #FavoriteScene', cta: 'Vote & debate below' },
+            { day: 3, platform: 'TikTok / Reels', type: 'Reaction Stitch', time: '11:00 AM', copy: `React to ${d.title} and I’ll feature the best ones.`, hashtags: '#Reaction #Stitch', cta: 'Use the sound & show your face' },
+            { day: 4, platform: 'Instagram Story', type: 'Q&A', time: '8:00 PM', copy: `Ask me anything about the ${d.title} video.`, hashtags: '#AMA #BehindTheVideo', cta: 'Reply with your question' },
+            { day: 5, platform: 'All Platforms', type: 'UGC Repost', time: '7:00 PM', copy: `The memes from ${d.title} are undefeated.`, hashtags: '#Meme #UGC', cta: 'Tag me in your favorites' }
+        ],
+        conversion: (d) => [
+            { day: 1, platform: 'YouTube / Instagram', type: 'Direct Push', time: '5:00 PM', copy: `${d.title} is live.\n\nWatch, like, subscribe. It all helps.`, hashtags: '#WatchNow #Subscribe', cta: 'Link in bio' },
+            { day: 2, platform: 'Instagram Story', type: 'Swipe Up', time: '8:00 PM', copy: `Running up the views on ${d.title}.`, hashtags: '#Views #RunItUp', cta: 'Tap the link — rewatch helps the algorithm' },
+            { day: 3, platform: 'TikTok / Reels', type: 'FOMO', time: '12:00 PM', copy: `Everyone is talking about ${d.title}.\n\nHave you seen it yet?`, hashtags: '#FOMO #Trending', cta: 'Link in bio — catch up' },
+            { day: 4, platform: 'All Platforms', type: 'Milestone', time: '6:00 PM', copy: `${d.title} just hit [X] views.\n\nNext milestone: [Y]. Let’s get there.`, hashtags: '#Milestone #Growth', cta: 'Link in bio — one more view' },
+            { day: 5, platform: 'All Platforms', type: 'Thank You / Next', time: '9:00 PM', copy: `${d.title} went crazy because of y’all.\n\nThe next video is already filmed.`, hashtags: '#ThankYou #NextUp', cta: 'Subscribe so you don’t miss it' }
+        ],
+        retention: (d) => [
+            { day: 1, platform: 'YouTube / TikTok', type: 'Deep Dive', time: '6:00 PM', copy: `Easter eggs in ${d.title} that you definitely missed.`, hashtags: '#EasterEgg #Breakdown', cta: 'Comment how many you caught' },
+            { day: 2, platform: 'Instagram / X', type: 'Director’s Commentary', time: '8:00 PM', copy: `Why I shot ${d.title} this way. The real story.`, hashtags: '#Director #Commentary', cta: 'Reply for Part 2' },
+            { day: 3, platform: 'TikTok / Reels', type: 'Alternate Cut', time: '12:00 PM', copy: `The ${d.title} scene that got cut. Should I release it?`, hashtags: '#DeletedScene #Extended', cta: 'Comment YES' },
+            { day: 4, platform: 'Instagram Story', type: 'Community', time: '5:00 PM', copy: `Your theories about ${d.title} are wild. Here are my favorites.`, hashtags: '#Theory #Community', cta: 'Drop your theory — I’m reading' },
+            { day: 5, platform: 'All Platforms', type: 'Next Tease', time: '7:00 PM', copy: `${d.title} was just the beginning.\n\nWait until you see what’s next.`, hashtags: '#Teaser #ComingSoon', cta: 'Turn on notifications' }
+        ],
+        crosspromo: (d) => [
+            { day: 1, platform: 'Instagram / X', type: 'Platform Jump', time: '5:00 PM', copy: `The extended cut of ${d.title} is only on ${d.platform || 'my page'}.`, hashtags: '#ExtendedCut #Exclusive', cta: 'Link in bio' },
+            { day: 2, platform: 'TikTok / Reels', type: 'Why Follow', time: '12:00 PM', copy: `I drop video extras on ${d.platform || 'my page'} that never go here.`, hashtags: '#Exclusive #Bonus', cta: 'Link in bio — join' },
+            { day: 3, platform: 'Instagram Story', type: 'Early Access', time: '8:00 PM', copy: `${d.platform || 'My page'} saw ${d.title} before anyone else.`, hashtags: '#First #EarlyAccess', cta: 'Tap the link — never be late again' },
+            { day: 4, platform: 'All Platforms', type: 'Proof', time: '11:00 AM', copy: `${d.platform || 'Page'} community gets the director’s cut. Always.`, hashtags: '#DirectorCut #OG', cta: 'Link in bio — pull up' },
+            { day: 5, platform: 'All Platforms', type: 'Migration', time: '7:00 PM', copy: `The real ${d.title} discussion is on ${d.platform || 'my page'}.\n\nNot here.`, hashtags: '#RealTalk #Community', cta: 'Link in bio' }
         ]
     },
     playlist: {
-        name: 'Playlist Push',
-        desc: '5-day curator & fan push',
-        days: (d) => [
-            { day: 1, platform: 'Spotify / Email', type: 'Curator Pitch', time: '10:00 AM', copy: `Just submitted ${d.song} to 10 playlist curators.\n\nPitch tip: lead with the vibe, not your bio.`, hashtags: '#PlaylistPush #Spotify', cta: 'Submit to Spotify for Artists editorials' },
-            { day: 2, platform: 'Instagram Story', type: 'Playlist Request', time: '6:00 PM', copy: `What playlist should ${d.song} be on?\n\nTag the curator or drop the playlist link.`, hashtags: '#Playlist #Curator', cta: 'DM me playlists you run' },
-            { day: 3, platform: 'TikTok / Reels', type: 'Playlist Vibe Check', time: '12:00 PM', copy: `POV: ${d.song} just got added to your late-night drive playlist 🌙`, hashtags: '#PlaylistVibes #LateNightDrive', cta: 'Stitch this with your reaction' },
-            { day: 4, platform: 'Instagram / X', type: 'Fan Push', time: '5:00 PM', copy: `If ${d.song} is in your playlist, screenshot it and tag me.\n\nBest playlist name wins a repost.`, hashtags: '#PlaylistChallenge', cta: 'Add to your playlist & share' },
-            { day: 5, platform: 'All Platforms', type: 'Results / Thanks', time: '7:00 PM', copy: `${d.song} just hit [X] playlist adds in 5 days.\n\nIndependent artists run the game. Thank you.`, hashtags: '#IndependentArtist #Playlist', cta: 'Keep sharing — it compounds' }
+        awareness: (d) => [
+            { day: 1, platform: 'Instagram / X', type: 'Playlist Reveal', time: '6:00 PM', copy: `New playlist: ${d.title}\n\nThe vibe: [describe]\n\n${d.url ? 'Link in bio.' : ''}`, hashtags: '#Playlist #NewVibes', cta: 'Save this playlist' },
+            { day: 2, platform: 'TikTok / Reels', type: 'Track Preview', time: '12:00 PM', copy: `Track 1 from ${d.title} — this sets the mood.`, hashtags: '#PlaylistPreview #VibeCheck', cta: 'Follow for the full tracklist reveal' },
+            { day: 3, platform: 'Instagram Story', type: 'Mood Board', time: '8:00 PM', copy: `${d.title} in 3 colors:`, hashtags: '#MoodBoard #Aesthetic', cta: 'Screenshot your vibe' },
+            { day: 4, platform: 'All Platforms', type: 'Update Push', time: '5:00 PM', copy: `Just updated ${d.title} with [X] new tracks.\n\nFresh rotation.`, hashtags: '#Updated #Fresh', cta: 'Link in bio — run it' },
+            { day: 5, platform: 'All Platforms', type: 'Follow Drive', time: '9:00 AM', copy: `${d.title} is growing fast.\n\nBe part of it before it blows up.`, hashtags: '#PlaylistGrowth #BeforeItBlows', cta: 'Follow & save — link in bio' }
+        ],
+        engagement: (d) => [
+            { day: 1, platform: 'Instagram / X', type: 'Song Request', time: '5:00 PM', copy: `What song needs to be on ${d.title}?`, hashtags: '#SongRequest #Playlist', cta: 'Drop your suggestion below' },
+            { day: 2, platform: 'TikTok / Reels', type: 'Reaction', time: '12:00 PM', copy: `POV: you just discovered ${d.title} and it’s exactly what you needed.`, hashtags: '#Discovery #Vibe', cta: 'Stitch your reaction' },
+            { day: 3, platform: 'Instagram Story', type: 'Poll', time: '8:00 PM', copy: `Keep Track 3 or replace it on ${d.title}?`, hashtags: '#Poll #PlaylistCurator', cta: 'Vote now' },
+            { day: 4, platform: 'TikTok / Reels', type: 'UGC', time: '11:00 AM', copy: `Y’all have been sharing ${d.title} like crazy.`, hashtags: '#UGC #PlaylistShare', cta: 'Tag me in your story' },
+            { day: 5, platform: 'All Platforms', type: 'Community', time: '7:00 PM', copy: `${d.title} is more than a playlist. It’s a community now.`, hashtags: '#Community #PlaylistFam', cta: 'Join — link in bio' }
+        ],
+        conversion: (d) => [
+            { day: 1, platform: 'Instagram / X', type: 'Direct Follow', time: '5:00 PM', copy: `${d.title} — follow & save.\n\nEvery follow pushes this to more people.`, hashtags: '#Follow #Save', cta: 'Link in bio — 2 clicks' },
+            { day: 2, platform: 'Instagram Story', type: 'Swipe Up', time: '8:00 PM', copy: `Running up ${d.title} numbers.`, hashtags: '#RunItUp #Playlist', cta: 'Tap the link & follow' },
+            { day: 3, platform: 'TikTok / Reels', type: 'FOMO', time: '12:00 PM', copy: `Your friends are already following ${d.title}.\n\nYou’re the only one not in on it.`, hashtags: '#FOMO #JoinNow', cta: 'Link in bio — catch up' },
+            { day: 4, platform: 'All Platforms', type: 'Milestone', time: '6:00 PM', copy: `${d.title} just hit [X] followers.\n\nNext stop: [Y].`, hashtags: '#Milestone #Growth', cta: 'Link in bio — be part of it' },
+            { day: 5, platform: 'All Platforms', type: 'Exclusive', time: '9:00 PM', copy: `Followers of ${d.title} get early access to my next drop.`, hashtags: '#Exclusive #Perks', cta: 'Link in bio — join the inner circle' }
+        ],
+        retention: (d) => [
+            { day: 1, platform: 'Instagram Story', type: 'Update Schedule', time: '6:00 PM', copy: `${d.title} updates every [Monday/Friday].\n\nSet your reminder.`, hashtags: '#UpdateSchedule #Fresh', cta: 'Turn on post notifications' },
+            { day: 2, platform: 'TikTok / Reels', type: 'Curator Story', time: '12:00 PM', copy: `Why I made ${d.title} and why I keep updating it.`, hashtags: '#Storytime #Curator', cta: 'Follow for the journey' },
+            { day: 3, platform: 'Instagram / X', type: 'Community Spotlight', time: '5:00 PM', copy: `This follower’s ${d.title} story went viral.`, hashtags: '#Spotlight #Community', cta: 'Tag me — you might be next' },
+            { day: 4, platform: 'TikTok / Reels', type: 'Sneak Peek', time: '11:00 AM', copy: `Next ${d.title} update includes [artist/track].`, hashtags: '#SneakPeek #ComingSoon', cta: 'Guess the rest in comments' },
+            { day: 5, platform: 'All Platforms', type: 'Thank You', time: '7:00 PM', copy: `${d.title} wouldn’t exist without the people who save & share it.`, hashtags: '#Grateful #PlaylistFam', cta: 'Keep sharing — it compounds' }
+        ],
+        crosspromo: (d) => [
+            { day: 1, platform: 'Instagram / X', type: 'Platform Move', time: '5:00 PM', copy: `${d.title} is also on ${d.platform || 'my page'} — with bonus tracks.`, hashtags: '#Bonus #Exclusive', cta: 'Link in bio' },
+            { day: 2, platform: 'TikTok / Reels', type: 'Why Follow', time: '12:00 PM', copy: `${d.platform || 'My page'} gets playlist updates 24 hours early.`, hashtags: '#EarlyAccess #Playlist', cta: 'Link in bio — never miss an update' },
+            { day: 3, platform: 'Instagram Story', type: 'Proof', time: '8:00 PM', copy: `${d.platform || 'Page'} followers heard the new ${d.title} update first.`, hashtags: '#FirstListen #OG', cta: 'Tap the link & follow' },
+            { day: 4, platform: 'All Platforms', type: 'Migration', time: '11:00 AM', copy: `The real ${d.title} community votes on what gets added next.\n\nOn ${d.platform || 'my page'}.`, hashtags: '#Community #Vote', cta: 'Link in bio — pull up' },
+            { day: 5, platform: 'All Platforms', type: 'Results', time: '7:00 PM', copy: `${d.platform || 'Page'} followers grew ${d.title} by [X]% this month.`, hashtags: '#Growth #Community', cta: 'Still not there? Link in bio' }
         ]
     },
-    viral: {
-        name: 'Viral Hook Challenge',
-        desc: '5-day short-form blitz',
-        days: (d) => [
-            { day: 1, platform: 'TikTok / Reels', type: 'Hook Challenge', time: '12:00 PM', copy: `I dare you to not move when this hook drops 😤\n\n${d.song}`, hashtags: '#HookChallenge #Viral', cta: 'Use this sound & show your reaction' },
-            { day: 2, platform: 'TikTok / Reels', type: 'Duet Prompt', time: '11:00 AM', copy: `Drop a verse on this beat.\n\nBest one gets pinned.`, hashtags: '#OpenVerse #Duet', cta: 'Duet this — no rules' },
-            { day: 3, platform: 'TikTok / Reels', type: 'Trending Sound Flip', time: '1:00 PM', copy: `When the trending sound meets ${d.song}…`, hashtags: '#Trending #Remix', cta: 'Stitch this flip' },
-            { day: 4, platform: 'Instagram Story', type: 'Poll / Engage', time: '6:00 PM', copy: `Which hits harder: the beat or the lyrics?`, hashtags: '#Poll #Engage', cta: 'Vote & share to your story' },
-            { day: 5, platform: 'TikTok / Reels', type: 'UGC Repost', time: '12:00 PM', copy: `Y’all went CRAZY on this sound.\n\nHere are my favorites from this week.`, hashtags: '#UGC #Repost #Community', cta: 'Keep posting — I’m watching' }
+    channel: {
+        awareness: (d) => [
+            { day: 1, platform: 'Instagram / X', type: 'Intro Post', time: '6:00 PM', copy: `If you’re seeing this, you need to be following ${d.title}.\n\nHere’s why…`, hashtags: '#Follow #Discover', cta: 'Link in bio — go now' },
+            { day: 2, platform: 'TikTok / Reels', type: 'Best Of', time: '12:00 PM', copy: `The best thing posted on ${d.title} this week:`, hashtags: '#BestOf #Highlight', cta: 'Follow for daily drops' },
+            { day: 3, platform: 'Instagram Story', type: 'Countdown', time: '8:00 PM', copy: `Something big drops on ${d.title} ${d.date || 'soon'}.`, hashtags: '#Countdown #BigNews', cta: 'Turn on notifications' },
+            { day: 4, platform: 'All Platforms', type: 'Value Prop', time: '5:00 PM', copy: `${d.title} posts [content type] that you won’t find anywhere else.`, hashtags: '#Exclusive #OnlyHere', cta: 'Follow — link in bio' },
+            { day: 5, platform: 'All Platforms', type: 'Social Proof', time: '9:00 AM', copy: `${d.title} just hit [X] followers.\n\nThe wave is real.`, hashtags: '#Growth #Wave', cta: 'Join before it explodes — link in bio' }
+        ],
+        engagement: (d) => [
+            { day: 1, platform: 'Instagram / X', type: 'Question', time: '5:00 PM', copy: `What do you want to see on ${d.title} next?`, hashtags: '#Ask #Community', cta: 'Comment below — I’m reading' },
+            { day: 2, platform: 'TikTok / Reels', type: 'Challenge', time: '12:00 PM', copy: `Show me your best [related content] and I’ll feature the best on ${d.title}.`, hashtags: '#Challenge #Feature', cta: 'Use the hashtag & tag me' },
+            { day: 3, platform: 'Instagram Story', type: 'Poll', time: '8:00 PM', copy: `This or that for ${d.title}?`, hashtags: '#Poll #ThisOrThat', cta: 'Vote & share' },
+            { day: 4, platform: 'TikTok / Reels', type: 'Reaction', time: '11:00 AM', copy: `React to ${d.title}’s latest post and I’ll stitch the best ones.`, hashtags: '#Reaction #Stitch', cta: 'Show your face — I’m watching' },
+            { day: 5, platform: 'All Platforms', type: 'Community', time: '7:00 PM', copy: `${d.title} followers are different. Here’s the proof.`, hashtags: '#Community #Different', cta: 'Tag me — you might be featured' }
+        ],
+        conversion: (d) => [
+            { day: 1, platform: 'Instagram / X', type: 'Direct Follow', time: '5:00 PM', copy: `${d.title} — follow now.\n\nEvery follow tells the algorithm to push this harder.`, hashtags: '#Follow #Algorithm', cta: 'Link in bio — one click' },
+            { day: 2, platform: 'Instagram Story', type: 'Swipe Up', time: '8:00 PM', copy: `Running up ${d.title}.`, hashtags: '#RunItUp #Follow', cta: 'Tap the link' },
+            { day: 3, platform: 'TikTok / Reels', type: 'FOMO', time: '12:00 PM', copy: `Your friends already follow ${d.title}.\n\nYou’re missing the conversation.`, hashtags: '#FOMO #MissingOut', cta: 'Link in bio — catch up' },
+            { day: 4, platform: 'All Platforms', type: 'Milestone', time: '6:00 PM', copy: `${d.title} just hit [X].\n\nNext stop: [Y]. Let’s get there together.`, hashtags: '#Milestone #Together', cta: 'Link in bio — be part of it' },
+            { day: 5, platform: 'All Platforms', type: 'Exclusive', time: '9:00 PM', copy: `${d.title} followers get early access to everything I drop.`, hashtags: '#Perks #EarlyAccess', cta: 'Link in bio — join the inner circle' }
+        ],
+        retention: (d) => [
+            { day: 1, platform: 'Instagram Story', type: 'Schedule', time: '6:00 PM', copy: `${d.title} drops every [day] at [time].\n\nSet your alarm.`, hashtags: '#Schedule #Consistent', cta: 'Turn on post notifications' },
+            { day: 2, platform: 'TikTok / Reels', type: 'BTS', time: '12:00 PM', copy: `What goes into a ${d.title} post? More than you think.`, hashtags: '#BTS #Process', cta: 'Follow for the full breakdown' },
+            { day: 3, platform: 'Instagram / X', type: 'Community Spotlight', time: '5:00 PM', copy: `This ${d.title} follower went viral because of [content].`, hashtags: '#Spotlight #Community', cta: 'Tag me — you might be next' },
+            { day: 4, platform: 'TikTok / Reels', type: 'Sneak Peek', time: '11:00 AM', copy: `Next week on ${d.title}:`, hashtags: '#SneakPeek #ComingSoon', cta: 'Guess what’s coming in comments' },
+            { day: 5, platform: 'All Platforms', type: 'Thank You', time: '7:00 PM', copy: `${d.title} is what it is because of y’all.\n\nThank you for showing up.`, hashtags: '#Grateful #Community', cta: 'Keep engaging — it matters' }
+        ],
+        crosspromo: (d) => [
+            { day: 1, platform: 'Instagram / X', type: 'Platform Jump', time: '5:00 PM', copy: `${d.title} has a sister page on ${d.platform || 'another platform'}.\n\nDifferent content. Same energy.`, hashtags: '#SisterPage #MoreContent', cta: 'Link in bio — follow both' },
+            { day: 2, platform: 'TikTok / Reels', type: 'Why Follow', time: '12:00 PM', copy: `${d.platform || 'My other page'} gets the content that’s too raw for here.`, hashtags: '#Raw #Unfiltered', cta: 'Link in bio — pull up' },
+            { day: 3, platform: 'Instagram Story', type: 'Early Access', time: '8:00 PM', copy: `${d.platform || 'My page'} saw it first. Always.`, hashtags: '#First #Always', cta: 'Tap the link — never miss again' },
+            { day: 4, platform: 'All Platforms', type: 'Proof', time: '11:00 AM', copy: `${d.platform || 'Page'} followers get the exclusive drops.\n\nEvery time.`, hashtags: '#Exclusive #EveryTime', cta: 'Link in bio — join' },
+            { day: 5, platform: 'All Platforms', type: 'Migration', time: '7:00 PM', copy: `The real conversation happens on ${d.platform || 'my page'}.\n\nNot here.`, hashtags: '#RealTalk #Community', cta: 'Link in bio — pull up' }
         ]
     },
-    countdown: {
-        name: 'Pre-Save Countdown',
-        desc: '7-day hype build to release',
-        days: (d) => [
-            { day: 1, platform: 'Instagram / X', type: 'Announcement', time: '5:00 PM', copy: `🗓 MARK YOUR CALENDARS\n\n${d.song} — ${d.date}`, hashtags: '#SaveTheDate', cta: 'Turn on notifications' },
-            { day: 2, platform: 'Instagram Story', type: 'Mood Board', time: '8:00 PM', copy: `The vibe of ${d.song} in 3 colors:`, hashtags: '#MoodBoard #Aesthetic', cta: 'Screenshot your guess' },
-            { day: 3, platform: 'TikTok / Reels', type: 'Lyric Teaser', time: '12:00 PM', copy: `“[Pull a lyric from the song]”\n\n${d.song} — ${d.date}`, hashtags: '#Lyrics #Quote', cta: 'Guess the next line in comments' },
-            { day: 4, platform: 'Instagram / X', type: 'Pre-Save Reminder', time: '6:00 PM', copy: `3 days left.\n\nPre-save link in bio — it takes 5 seconds and helps more than you know.`, hashtags: '#PreSave', cta: 'Link in bio' },
-            { day: 5, platform: 'TikTok / Reels', type: 'Reaction Test', time: '11:00 AM', copy: `Played ${d.song} for my [friend/mom/dog] for the first time…`, hashtags: '#Reaction #FirstListen', cta: 'Drop your predictions' },
-            { day: 6, platform: 'All Platforms', type: 'Final Teaser', time: '9:00 PM', copy: `Tomorrow. Midnight. ${d.song}.\n\nSet your alarm.`, hashtags: '#MidnightRelease', cta: 'Who’s staying up?' },
-            { day: 7, platform: 'All Platforms', type: 'LIVE / DROP', time: '12:01 AM', copy: `${d.song} IS LIVE.\n\nGo run it up NOW.`, hashtags: '#OutNow #NewMusic', cta: 'Stream link in bio' }
+    page: {
+        awareness: (d) => [
+            { day: 1, platform: 'Instagram / X', type: 'Link Push', time: '6:00 PM', copy: `Everything I do lives here: ${d.title}\n\nOne link. All platforms.`, hashtags: '#LinkInBio #AllInOne', cta: 'Tap the link — explore everything' },
+            { day: 2, platform: 'TikTok / Reels', type: 'Tour', time: '12:00 PM', copy: `Let me show you around ${d.title}…`, hashtags: '#Tour #Explore', cta: 'Follow the link for the full experience' },
+            { day: 3, platform: 'Instagram Story', type: 'Update', time: '8:00 PM', copy: `Just updated ${d.title} with new links.\n\nFresh everything.`, hashtags: '#Updated #FreshLinks', cta: 'Tap through & check it out' },
+            { day: 4, platform: 'All Platforms', type: 'Value', time: '5:00 PM', copy: `${d.title} is the fastest way to find everything I’m doing.`, hashtags: '#OneStop #Everything', cta: 'Save the link — you’ll need it' },
+            { day: 5, platform: 'All Platforms', type: 'Social Proof', time: '9:00 AM', copy: `${d.title} just got [X] clicks this week.\n\nY’all are active.`, hashtags: '#Clicks #Active', cta: 'Tap the link — run it up' }
+        ],
+        engagement: (d) => [
+            { day: 1, platform: 'Instagram / X', type: 'Feedback', time: '5:00 PM', copy: `What should I add to ${d.title}?`, hashtags: '#Feedback #BuildTogether', cta: 'Comment your ideas' },
+            { day: 2, platform: 'TikTok / Reels', type: 'Reaction', time: '12:00 PM', copy: `React to ${d.title} and I’ll feature the best takes.`, hashtags: '#Reaction #Feature', cta: 'Stitch this & show your review' },
+            { day: 3, platform: 'Instagram Story', type: 'Poll', time: '8:00 PM', copy: `Which link on ${d.title} do you use most?`, hashtags: '#Poll #LinkPage', cta: 'Vote & share' },
+            { day: 4, platform: 'TikTok / Reels', type: 'Tutorial', time: '11:00 AM', copy: `How to get the most out of ${d.title}:`, hashtags: '#Tutorial #Tips', cta: 'Follow for more hacks' },
+            { day: 5, platform: 'All Platforms', type: 'Community', time: '7:00 PM', copy: `${d.title} is more than links. It’s the hub.`, hashtags: '#Hub #Community', cta: 'Tag someone who needs this' }
+        ],
+        conversion: (d) => [
+            { day: 1, platform: 'Instagram / X', type: 'Direct Click', time: '5:00 PM', copy: `${d.title} — one tap to everything.\n\nWhy go anywhere else?`, hashtags: '#OneTap #Everything', cta: 'Link in bio — tap now' },
+            { day: 2, platform: 'Instagram Story', type: 'Swipe Up', time: '8:00 PM', copy: `Running up clicks on ${d.title}.`, hashtags: '#Clicks #RunItUp', cta: 'Tap the link' },
+            { day: 3, platform: 'TikTok / Reels', type: 'FOMO', time: '12:00 PM', copy: `You’re missing drops because you don’t have ${d.title} saved.`, hashtags: '#FOMO #SaveIt', cta: 'Link in bio — fix that' },
+            { day: 4, platform: 'All Platforms', type: 'Milestone', time: '6:00 PM', copy: `${d.title} just hit [X] clicks.\n\nNext: [Y].`, hashtags: '#Milestone #Growth', cta: 'Tap the link — one more click' },
+            { day: 5, platform: 'All Platforms', type: 'Exclusive', time: '9:00 PM', copy: `${d.title} gets updated with exclusive links before anywhere else.`, hashtags: '#Exclusive #First', cta: 'Bookmark it — link in bio' }
+        ],
+        retention: (d) => [
+            { day: 1, platform: 'Instagram Story', type: 'Update Alert', time: '6:00 PM', copy: `${d.title} just got refreshed.\n\nNew links. New content.`, hashtags: '#Updated #Fresh', cta: 'Check it out — link in bio' },
+            { day: 2, platform: 'TikTok / Reels', type: 'BTS', time: '12:00 PM', copy: `How I organize ${d.title} — and why it matters.`, hashtags: '#BTS #Organization', cta: 'Follow for the strategy' },
+            { day: 3, platform: 'Instagram / X', type: 'Community', time: '5:00 PM', copy: `This fan found something on ${d.title} that even I forgot about.`, hashtags: '#Community #Discovery', cta: 'Explore — link in bio' },
+            { day: 4, platform: 'TikTok / Reels', type: 'Sneak Peek', time: '11:00 AM', copy: `Next ${d.title} update includes [new feature/link].`, hashtags: '#SneakPeek #ComingSoon', cta: 'Guess what’s coming' },
+            { day: 5, platform: 'All Platforms', type: 'Thank You', time: '7:00 PM', copy: `${d.title} is the most clicked link I have.\n\nBecause of y’all.`, hashtags: '#Grateful #TopLink', cta: 'Keep sharing — it compounds' }
+        ],
+        crosspromo: (d) => [
+            { day: 1, platform: 'Instagram / X', type: 'Platform Hub', time: '5:00 PM', copy: `${d.title} connects everything.\n\n${d.platform || 'All platforms'} in one place.`, hashtags: '#Hub #AllPlatforms', cta: 'Link in bio — bookmark it' },
+            { day: 2, platform: 'TikTok / Reels', type: 'Why Save', time: '12:00 PM', copy: `I drop new links on ${d.title} before I post them anywhere.`, hashtags: '#First #Exclusive', cta: 'Save the link — never miss' },
+            { day: 3, platform: 'Instagram Story', type: 'Proof', time: '8:00 PM', copy: `${d.platform || 'Page'} traffic comes from ${d.title} first.`, hashtags: '#Traffic #Source', cta: 'Tap the link — see why' },
+            { day: 4, platform: 'All Platforms', type: 'Migration', time: '11:00 AM', copy: `Tired of jumping between apps? ${d.title} has everything.`, hashtags: '#OneLink #Everything', cta: 'Link in bio — simplify' },
+            { day: 5, platform: 'All Platforms', type: 'Results', time: '7:00 PM', copy: `${d.title} just became my #1 traffic source.\n\nBecause y’all trust it.`, hashtags: '#NumberOne #Trust', cta: 'Still haven’t saved it? Link in bio' }
         ]
     }
 };
@@ -72,6 +276,7 @@ const CAMPAIGN_TEMPLATES = {
 let currentProfile = null;
 let currentId = '';
 let currentCampaignId = null;
+let currentContentId = null;
 let fileSystemDirectory = null;
 
 // ==================== HELPERS ====================
@@ -84,6 +289,7 @@ function getDefaultProfile(name) {
         avatarEmoji: '🎵',
         links: JSON.parse(JSON.stringify(DEFAULT_LINKS)),
         campaigns: [],
+        contentLibrary: [],
         fileLibrary: []
     };
 }
@@ -140,6 +346,24 @@ function sanitizeFileName(str) {
     return str.replace(/[^a-z0-9_\-\.]/gi, '_').replace(/_+/g, '_').substring(0, 40);
 }
 
+function detectPlatform(url) {
+    if (!url) return 'other';
+    for (const p of PLATFORMS) {
+        if (p.pattern.test(url)) return p.id;
+    }
+    return 'other';
+}
+
+function detectContentType(url) {
+    if (!url) return 'song';
+    if (/track|song|single/i.test(url)) return 'song';
+    if (/album|ep/i.test(url)) return 'album';
+    if (/playlist/i.test(url)) return 'playlist';
+    if (/channel|@|user\/|c\//i.test(url)) return 'channel';
+    if (/watch|video|v=/i.test(url)) return 'video';
+    return 'song';
+}
+
 function buildFileName(category, label, ext) {
     const cat = FILE_CATEGORIES[category] || { ext: 'txt' };
     const artist = sanitizeFileName(currentProfile?.artistName || 'Artist');
@@ -149,7 +373,7 @@ function buildFileName(category, label, ext) {
     return `${cat.folder}_${count}_${artist}_${lbl}_${date}.${ext || cat.ext}`;
 }
 
-// ==================== FILE SYSTEM & LIBRARY ====================
+// ==================== FILE SYSTEM ====================
 function supportsFileSystemAccess() {
     return 'showDirectoryPicker' in window;
 }
@@ -157,7 +381,7 @@ function supportsFileSystemAccess() {
 async function pickSaveDirectory() {
     try {
         fileSystemDirectory = await window.showDirectoryPicker();
-        alert('Save folder set! Files will now be organized into subfolders automatically.');
+        alert('Save folder set! Files will be organized into subfolders automatically.');
         return true;
     } catch (e) {
         return false;
@@ -268,6 +492,7 @@ function logout() {
     currentProfile = null;
     currentId = '';
     currentCampaignId = null;
+    currentContentId = null;
     fileSystemDirectory = null;
     showView('loginView');
     renderAccountList();
@@ -289,6 +514,7 @@ function loadAccount(id) {
     currentId = id;
     currentProfile = JSON.parse(JSON.stringify(accounts[id].data));
     if (!currentProfile.campaigns) currentProfile.campaigns = [];
+    if (!currentProfile.contentLibrary) currentProfile.contentLibrary = [];
     if (!currentProfile.fileLibrary) currentProfile.fileLibrary = [];
     renderBio();
     showView('appView');
@@ -409,7 +635,6 @@ function saveProfile() {
 
     saveCurrentProfile();
 
-    // Auto-backup bio as JSON
     const backupName = buildFileName('bio-assets', 'BioBackup_' + todayStamp(), 'json');
     const backupContent = JSON.stringify(p, null, 2);
     addToLibrary({
@@ -425,6 +650,234 @@ function saveProfile() {
 
     closeEditor();
     renderBio();
+}
+
+// ==================== CONTENT LIBRARY ====================
+function showContentLibrary() {
+    renderContentLibrary();
+    showView('contentLibraryView');
+}
+
+function renderContentLibrary() {
+    const list = document.getElementById('contentList');
+    const empty = document.getElementById('contentEmpty');
+    const items = currentProfile.contentLibrary || [];
+
+    if (items.length === 0) {
+        list.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+    }
+
+    empty.style.display = 'none';
+    list.innerHTML = '';
+
+    items.slice().reverse().forEach(item => {
+        const typeInfo = CONTENT_TYPES.find(t => t.id === item.type) || CONTENT_TYPES[0];
+        const platInfo = PLATFORMS.find(p => p.id === item.platform) || PLATFORMS[PLATFORMS.length - 1];
+        const card = document.createElement('div');
+        card.className = 'content-card';
+        card.innerHTML = `
+            <div class="content-icon">${typeInfo.icon}</div>
+            <div class="content-info" onclick="promoteContent('${item.id}')">
+                <div class="content-title">${escapeHtml(item.title)}</div>
+                <div class="content-meta">${typeInfo.label} • ${platInfo.label}</div>
+            </div>
+            <button class="btn btn-danger btn-small" onclick="deleteContent('${item.id}')" style="width:auto;">🗑</button>
+        `;
+        list.appendChild(card);
+    });
+}
+
+function showAddContent() {
+    document.getElementById('contentTitle').value = '';
+    document.getElementById('contentUrl').value = '';
+    document.getElementById('contentTypeSelect').value = 'song';
+    document.getElementById('contentPlatformSelect').value = 'spotify';
+    document.getElementById('contentNotes').value = '';
+    showView('addContentView');
+}
+
+function parseContentUrl() {
+    const url = document.getElementById('contentUrl').value.trim();
+    if (!url) return;
+    
+    const platform = detectPlatform(url);
+    const type = detectContentType(url);
+    
+    document.getElementById('contentPlatformSelect').value = platform;
+    document.getElementById('contentTypeSelect').value = type;
+    
+    // Try to extract title from URL
+    let title = '';
+    try {
+        const urlObj = new URL(normalizeUrl(url));
+        const pathParts = urlObj.pathname.split('/').filter(Boolean);
+        const lastPart = pathParts[pathParts.length - 1] || '';
+        title = decodeURIComponent(lastPart).replace(/-/g, ' ').replace(/_/g, ' ');
+        title = title.replace(/\b\w/g, l => l.toUpperCase());
+    } catch (e) {}
+    
+    if (title && !document.getElementById('contentTitle').value.trim()) {
+        document.getElementById('contentTitle').value = title;
+    }
+}
+
+function saveContent() {
+    const title = document.getElementById('contentTitle').value.trim();
+    const url = normalizeUrl(document.getElementById('contentUrl').value.trim());
+    const type = document.getElementById('contentTypeSelect').value;
+    const platform = document.getElementById('contentPlatformSelect').value;
+    const notes = document.getElementById('contentNotes').value.trim();
+
+    if (!title || !url) {
+        alert('Title and URL are required');
+        return;
+    }
+
+    const item = {
+        id: uuid('cnt'),
+        title: title,
+        url: url,
+        type: type,
+        platform: platform,
+        notes: notes,
+        created: new Date().toISOString()
+    };
+
+    if (!currentProfile.contentLibrary) currentProfile.contentLibrary = [];
+    currentProfile.contentLibrary.push(item);
+    saveCurrentProfile();
+
+    const manifestName = buildFileName('bio-assets', 'Content_' + sanitizeFileName(title), 'json');
+    const manifestContent = JSON.stringify(item, null, 2);
+    addToLibrary({
+        id: uuid('f'),
+        name: manifestName,
+        displayName: `Content: ${title}`,
+        category: 'bio-assets',
+        created: new Date().toISOString(),
+        type: 'application/json',
+        size: manifestContent.length
+    });
+    saveFileOrganized(manifestName, manifestContent, 'application/json', 'bio-assets');
+
+    showContentLibrary();
+}
+
+function deleteContent(id) {
+    if (!confirm('Delete this content from your library?')) return;
+    currentProfile.contentLibrary = currentProfile.contentLibrary.filter(c => c.id !== id);
+    saveCurrentProfile();
+    renderContentLibrary();
+}
+
+function promoteContent(id) {
+    currentContentId = id;
+    const item = currentProfile.contentLibrary.find(c => c.id === id);
+    if (!item) return;
+
+    document.getElementById('campaignContentTitle').textContent = item.title;
+    document.getElementById('campaignContentType').textContent = CONTENT_TYPES.find(t => t.id === item.type)?.label || item.type;
+    document.getElementById('campaignContentUrl').textContent = item.url;
+    document.getElementById('campaignGoal').value = 'awareness';
+    
+    renderGoalDescriptions();
+    showView('promoteContentView');
+}
+
+function renderGoalDescriptions() {
+    const container = document.getElementById('goalDescriptions');
+    container.innerHTML = '';
+    Object.entries(CAMPAIGN_GOALS).forEach(([key, goal]) => {
+        const div = document.createElement('div');
+        div.className = 'goal-card';
+        div.innerHTML = `
+            <div class="goal-icon">${goal.icon}</div>
+            <div class="goal-info">
+                <div class="goal-name">${goal.label}</div>
+                <div class="goal-desc">${goal.desc}</div>
+            </div>
+        `;
+        div.onclick = () => {
+            document.getElementById('campaignGoal').value = key;
+            document.querySelectorAll('.goal-card').forEach(c => c.classList.remove('selected'));
+            div.classList.add('selected');
+        };
+        if (key === 'awareness') div.classList.add('selected');
+        container.appendChild(div);
+    });
+}
+
+function generateContentCampaign() {
+    const item = currentProfile.contentLibrary.find(c => c.id === currentContentId);
+    if (!item) return;
+
+    const goal = document.getElementById('campaignGoal').value;
+    const templateSet = CAMPAIGN_TEMPLATES[item.type];
+    
+    if (!templateSet || !templateSet[goal]) {
+        alert('Campaign template not found for this type/goal. Using generic fallback.');
+        return;
+    }
+
+    const days = templateSet[goal]({
+        title: item.title,
+        url: item.url,
+        platform: PLATFORMS.find(p => p.id === item.platform)?.label || item.platform,
+        date: document.getElementById('campaignDate').value || 'soon',
+        notes: item.notes
+    });
+
+    const campaign = {
+        id: uuid('c'),
+        title: `${item.title} — ${CAMPAIGN_GOALS[goal].label}`,
+        type: CAMPAIGN_GOALS[goal].label,
+        contentType: item.type,
+        contentId: item.id,
+        goal: goal,
+        song: item.title,
+        date: document.getElementById('campaignDate').value || 'soon',
+        created: new Date().toISOString(),
+        days: days.map((d, i) => ({ ...d, id: i, done: false }))
+    };
+
+    currentProfile.campaigns.push(campaign);
+    saveCurrentProfile();
+
+    const md = buildCampaignMarkdown(campaign);
+    const mdName = buildFileName('campaigns', sanitizeFileName(campaign.title), 'md');
+    addToLibrary({
+        id: uuid('f'),
+        name: mdName,
+        displayName: campaign.title,
+        category: 'campaigns',
+        created: new Date().toISOString(),
+        type: 'text/markdown',
+        size: md.length
+    });
+    saveFileOrganized(mdName, md, 'text/markdown', 'campaigns');
+
+    openCampaign(campaign.id);
+}
+
+function buildCampaignMarkdown(c) {
+    let md = `# ${c.title}\n`;
+    md += `**Goal:** ${c.type}  \n`;
+    md += `**Content:** ${c.song}  \n`;
+    md += `**Date:** ${c.date}  \n`;
+    md += `**Generated:** ${new Date(c.created).toLocaleString()}  \n\n`;
+    md += `---\n\n`;
+    c.days.forEach(d => {
+        md += `## Day ${d.day} — ${d.platform}\n`;
+        md += `**Type:** ${d.type}  \n`;
+        md += `**Best Time:** ${d.time}  \n\n`;
+        md += `### Copy\n${d.copy}\n\n`;
+        md += `### Hashtags\n${d.hashtags}\n\n`;
+        md += `### CTA\n${d.cta}\n\n`;
+        md += `---\n\n`;
+    });
+    return md;
 }
 
 // ==================== CAMPAIGNS ====================
@@ -455,75 +908,13 @@ function renderCampaignList() {
         card.onclick = () => openCampaign(c.id);
         card.innerHTML = `
             <div class="campaign-card-info">
-                <div class="campaign-card-title">${c.title}</div>
+                <div class="campaign-card-title">${escapeHtml(c.title)}</div>
                 <div class="campaign-card-meta">${c.type} • ${completed}/${total} done</div>
             </div>
             <span class="campaign-card-arrow">›</span>
         `;
         list.appendChild(card);
     });
-}
-
-function showCampaignBuilder() {
-    document.getElementById('campaignSong').value = '';
-    document.getElementById('campaignDate').value = '';
-    document.getElementById('campaignType').value = 'release';
-    showView('campaignBuilderView');
-}
-
-async function generateCampaign() {
-    const song = document.getElementById('campaignSong').value.trim() || 'My New Track';
-    const date = document.getElementById('campaignDate').value || 'soon';
-    const type = document.getElementById('campaignType').value;
-    const template = CAMPAIGN_TEMPLATES[type];
-
-    const campaign = {
-        id: uuid('c'),
-        title: `${template.name}: ${song}`,
-        type: template.name,
-        song: song,
-        date: date,
-        created: new Date().toISOString(),
-        days: template.days({ song, date }).map((d, i) => ({ ...d, id: i, done: false }))
-    };
-
-    currentProfile.campaigns.push(campaign);
-    saveCurrentProfile();
-
-    // Auto-save campaign plan as markdown
-    const md = buildCampaignMarkdown(campaign);
-    const mdName = buildFileName('campaigns', sanitizeFileName(campaign.title), 'md');
-    addToLibrary({
-        id: uuid('f'),
-        name: mdName,
-        displayName: campaign.title,
-        category: 'campaigns',
-        created: new Date().toISOString(),
-        type: 'text/markdown',
-        size: md.length
-    });
-    await saveFileOrganized(mdName, md, 'text/markdown', 'campaigns');
-
-    openCampaign(campaign.id);
-}
-
-function buildCampaignMarkdown(c) {
-    let md = `# ${c.title}\n`;
-    md += `**Type:** ${c.type}  \n`;
-    md += `**Song:** ${c.song}  \n`;
-    md += `**Date:** ${c.date}  \n`;
-    md += `**Generated:** ${new Date(c.created).toLocaleString()}  \n\n`;
-    md += `---\n\n`;
-    c.days.forEach(d => {
-        md += `## Day ${d.day} — ${d.platform}\n`;
-        md += `**Type:** ${d.type}  \n`;
-        md += `**Best Time:** ${d.time}  \n\n`;
-        md += `### Copy\n${d.copy}\n\n`;
-        md += `### Hashtags\n${d.hashtags}\n\n`;
-        md += `### CTA\n${d.cta}\n\n`;
-        md += `---\n\n`;
-    });
-    return md;
 }
 
 function openCampaign(id) {
@@ -642,14 +1033,12 @@ function drawPromoImage() {
     const subtitle = document.getElementById('promoSubtitle').value.trim() || 'OUT NOW';
     const accent = document.getElementById('promoAccent').value;
 
-    // Background
     const grad = ctx.createLinearGradient(0, 0, size, size);
     grad.addColorStop(0, '#0a0a1a');
     grad.addColorStop(1, '#000000');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, size, size);
 
-    // Accent glow
     ctx.save();
     ctx.globalAlpha = 0.15;
     const glow = ctx.createRadialGradient(size/2, size/2, 100, size/2, size/2, 600);
@@ -659,17 +1048,14 @@ function drawPromoImage() {
     ctx.fillRect(0, 0, size, size);
     ctx.restore();
 
-    // Top bar line
     ctx.fillStyle = accent;
     ctx.fillRect(80, 80, size - 160, 8);
 
-    // Artist name
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 64px -apple-system, BlinkMacSystemFont, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(p.artistName, size/2, 280);
 
-    // Main title
     ctx.font = 'bold 120px -apple-system, BlinkMacSystemFont, sans-serif';
     const words = title.length > 15 ? title.split(' ') : [title];
     let y = 480;
@@ -682,17 +1068,14 @@ function drawPromoImage() {
         }
     });
 
-    // Subtitle
     ctx.fillStyle = accent;
     ctx.font = 'bold 72px -apple-system, BlinkMacSystemFont, sans-serif';
     ctx.fillText(subtitle, size/2, 780);
 
-    // Bottom branding
     ctx.fillStyle = '#444444';
     ctx.font = '36px -apple-system, BlinkMacSystemFont, sans-serif';
     ctx.fillText('McMakeApps', size/2, 980);
 
-    // Bottom line
     ctx.fillStyle = accent;
     ctx.globalAlpha = 0.5;
     ctx.fillRect(80, 1020, size - 160, 4);
