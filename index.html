@@ -253,7 +253,90 @@
             font-weight: 500;
         }
 
-        /* Campaign Styles */
+        /* Content Library */
+        .content-list {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 1rem;
+        }
+
+        .content-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+        }
+
+        .content-icon {
+            width: 44px; height: 44px; border-radius: 12px;
+            background: var(--bg);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; flex-shrink: 0;
+            border: 1px solid var(--border);
+        }
+
+        .content-info {
+            flex: 1;
+            min-width: 0;
+            cursor: pointer;
+        }
+
+        .content-title {
+            font-weight: 700; font-size: 15px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            margin-bottom: 3px;
+        }
+
+        .content-meta {
+            color: var(--text-secondary); font-size: 12px;
+        }
+
+        /* Goal Cards */
+        .goal-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .goal-card {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 14px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: left;
+        }
+
+        .goal-card.selected {
+            border-color: var(--accent);
+            background: rgba(10, 132, 255, 0.08);
+        }
+
+        .goal-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .goal-name {
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 3px;
+        }
+
+        .goal-desc {
+            color: var(--text-secondary);
+            font-size: 12px;
+            line-height: 1.3;
+        }
+
+        /* Campaigns */
         .campaign-list {
             width: 100%;
             display: flex;
@@ -333,7 +416,7 @@
             gap: 6px;
         }
 
-        /* File Library Styles */
+        /* File Library */
         .file-list {
             width: 100%;
             display: flex;
@@ -353,36 +436,20 @@
         }
 
         .file-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
+            width: 44px; height: 44px; border-radius: 12px;
             background: var(--bg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; flex-shrink: 0;
             border: 1px solid var(--border);
         }
 
-        .file-info {
-            flex: 1;
-            min-width: 0;
-        }
-
+        .file-info { flex: 1; min-width: 0; }
         .file-name {
-            font-weight: 700;
-            font-size: 14px;
+            font-weight: 700; font-size: 14px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             margin-bottom: 3px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
-
-        .file-meta {
-            color: var(--text-secondary);
-            font-size: 12px;
-        }
+        .file-meta { color: var(--text-secondary); font-size: 12px; }
 
         /* Modal */
         .modal-overlay {
@@ -509,6 +576,7 @@
     <!-- BIO APP VIEW -->
     <div id="appView" class="view">
         <div class="top-bar">
+            <button class="btn btn-secondary btn-small" onclick="showContentLibrary()">📚 Content</button>
             <button class="btn btn-secondary btn-small" onclick="showCampaigns()">🚀 Campaigns</button>
             <button class="btn btn-secondary btn-small" onclick="showFiles()">📁 Files</button>
             <button class="btn btn-secondary btn-small" onclick="openEditor()">✏ Edit</button>
@@ -527,53 +595,121 @@
         </div>
     </div>
 
+    <!-- CONTENT LIBRARY VIEW -->
+    <div id="contentLibraryView" class="view">
+        <div class="container">
+            <button class="back-btn" onclick="showView('appView')">← Back to Bio</button>
+            <h2>📚 Content Library</h2>
+            <p class="subtitle">Your songs, videos, playlists & more</p>
+
+            <button class="btn btn-primary" onclick="showAddContent()" style="margin-bottom:1.5rem;">+ Add Content</button>
+
+            <div id="contentEmpty" class="empty-state" style="display:none;">
+                No content yet.<br>
+                Add a song, video, playlist, or channel to promote.
+            </div>
+
+            <div class="content-list" id="contentList"></div>
+        </div>
+    </div>
+
+    <!-- ADD CONTENT VIEW -->
+    <div id="addContentView" class="view">
+        <div class="container">
+            <button class="back-btn" onclick="showContentLibrary()">← Cancel</button>
+            <h2>Add Content</h2>
+
+            <div class="form-group">
+                <label>URL</label>
+                <input type="url" id="contentUrl" placeholder="https://open.spotify.com/track/..." onblur="parseContentUrl()">
+            </div>
+
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" id="contentTitle" placeholder="Song or project name">
+            </div>
+
+            <div class="row">
+                <div class="form-group">
+                    <label>Type</label>
+                    <select id="contentTypeSelect">
+                        <option value="song">Song / Track</option>
+                        <option value="album">Album / EP</option>
+                        <option value="video">Video</option>
+                        <option value="playlist">Playlist</option>
+                        <option value="channel">Channel / Account</option>
+                        <option value="page">Link Page / Bio</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Platform</label>
+                    <select id="contentPlatformSelect">
+                        <option value="spotify">Spotify</option>
+                        <option value="apple">Apple Music</option>
+                        <option value="youtube">YouTube</option>
+                        <option value="soundcloud">SoundCloud</option>
+                        <option value="bandcamp">Bandcamp</option>
+                        <option value="instagram">Instagram</option>
+                        <option value="tiktok">TikTok</option>
+                        <option value="twitter">X / Twitter</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Notes (optional)</label>
+                <input type="text" id="contentNotes" placeholder="Release date, vibe, etc.">
+            </div>
+
+            <button class="btn btn-primary" onclick="saveContent()">Save Content</button>
+        </div>
+    </div>
+
+    <!-- PROMOTE CONTENT / CAMPAIGN BUILDER VIEW -->
+    <div id="promoteContentView" class="view">
+        <div class="container">
+            <button class="back-btn" onclick="showContentLibrary()">← Cancel</button>
+            <h2>🚀 Promote</h2>
+
+            <div style="width:100%; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:1.5rem;">
+                <div style="font-weight:700; font-size:16px; margin-bottom:4px;" id="campaignContentTitle">Title</div>
+                <div style="color:var(--text-secondary); font-size:13px;" id="campaignContentType">Type</div>
+                <div style="color:var(--text-muted); font-size:12px; margin-top:6px; word-break:break-all;" id="campaignContentUrl">URL</div>
+            </div>
+
+            <div class="form-group">
+                <label>Campaign Goal</label>
+                <input type="hidden" id="campaignGoal" value="awareness">
+                <div class="goal-grid" id="goalDescriptions"></div>
+            </div>
+
+            <div class="form-group">
+                <label>Target Date (optional)</label>
+                <input type="text" id="campaignDate" placeholder="e.g. Aug 15 or Friday">
+            </div>
+
+            <button class="btn btn-primary" onclick="generateContentCampaign()">Generate Campaign</button>
+        </div>
+    </div>
+
     <!-- CAMPAIGNS LIST VIEW -->
     <div id="campaignsView" class="view">
         <div class="container">
             <button class="back-btn" onclick="showView('appView')">← Back to Bio</button>
-            <h2>🚀 Promo Campaigns</h2>
-            <p class="subtitle">Proven strategies to drive traffic</p>
+            <h2>🚀 Campaigns</h2>
+            <p class="subtitle">Content-aware promo strategies</p>
 
-            <button class="btn btn-primary" onclick="showCampaignBuilder()" style="margin-bottom:10px;">+ New Campaign</button>
+            <button class="btn btn-primary" onclick="showContentLibrary()" style="margin-bottom:10px;">📚 Pick Content to Promote</button>
             <button class="btn btn-secondary" onclick="openPromoImage()" style="margin-bottom:10px;">🎨 Promo Image</button>
             <button class="btn btn-secondary" onclick="showFiles()" style="margin-bottom:1.5rem;">📁 File Library</button>
 
             <div id="campaignEmpty" class="empty-state" style="display:none;">
                 No campaigns yet.<br>
-                Create one to get a day-by-day promo plan.
+                Pick content from your library to generate a tailored plan.
             </div>
 
             <div class="campaign-list" id="campaignList"></div>
-        </div>
-    </div>
-
-    <!-- CAMPAIGN BUILDER VIEW -->
-    <div id="campaignBuilderView" class="view">
-        <div class="container">
-            <button class="back-btn" onclick="showCampaigns()">← Cancel</button>
-            <h2>New Campaign</h2>
-
-            <div class="form-group">
-                <label>Song / Project Name</label>
-                <input type="text" id="campaignSong" placeholder="e.g. Midnight Drive">
-            </div>
-
-            <div class="form-group">
-                <label>Release Date</label>
-                <input type="text" id="campaignDate" placeholder="e.g. Aug 15 or Friday">
-            </div>
-
-            <div class="form-group">
-                <label>Campaign Type</label>
-                <select id="campaignType">
-                    <option value="release">New Release Drop (7 days)</option>
-                    <option value="playlist">Playlist Push (5 days)</option>
-                    <option value="viral">Viral Hook Challenge (5 days)</option>
-                    <option value="countdown">Pre-Save Countdown (7 days)</option>
-                </select>
-            </div>
-
-            <button class="btn btn-primary" onclick="generateCampaign()">Generate Campaign</button>
         </div>
     </div>
 
